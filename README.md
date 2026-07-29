@@ -1,8 +1,8 @@
-# County Field Map
+# Kane Offline Map
 
 Reduces the county map to roads, water and buildings.
 
-County Field Map is a single-purpose, cross-platform, offline county classification application. It divides Kane County into 16 main sectors, each sector into a 16 × 16 inspection grid, and each inspection cell into an 8 × 8 practical grid.
+Kane Offline Map is a single-purpose, cross-platform, offline county classification and spatial SQL application. It divides Kane County into 16 main sectors, each sector into a 16 × 16 inspection grid, and each inspection cell into an 8 × 8 practical grid.
 
 ## Classification
 
@@ -41,11 +41,11 @@ The browser keeps a compact local safety journal. When the included TrivialHTTP 
 project-data/sectors/
 ```
 
-The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development.
+The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow.
 
-## Development environment
+## Development and delivery environment
 
-All development, database construction, validation, and packaging are performed on Linux.
+All development, database construction, validation, and packaging are performed on Linux. Development batches are delivered as Git format-patch files and applied on the Linux node with `git am`.
 
 Windows is a final offline runtime target only. Nothing in the database development workflow is built or executed on Windows. The final Windows TrivialHTTP binary is produced separately on a properly configured Linux build host. The database development node does not need a C compiler.
 

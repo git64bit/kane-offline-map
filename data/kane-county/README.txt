@@ -5,4 +5,4 @@ roads.json
 water.json
 buildings.json
 
-These files are not part of the County Field Map source repository.
+These files are not part of the Kane Offline Map source repository.

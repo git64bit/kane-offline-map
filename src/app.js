@@ -50,7 +50,7 @@
     setLoading("");
     updateUi();
     store.connect().catch((error) => {
-      console.error("County Field Map storage connection failed", error);
+      console.error("Kane Offline Map storage connection failed", error);
       setStorageStatus("local", `Browser journal active; ${error.message}`);
     });
   }
@@ -125,7 +125,7 @@
       store.discoverUndiscoveredInspection(sector, inspection.row, inspection.col);
       renderer.showPractical(sector, inspection, data);
     } catch (error) {
-      console.error("County Field Map sector load failed", error);
+      console.error("Kane Offline Map sector load failed", error);
       showFatal(`The field data for ${sector} could not be loaded. ${error.message}`);
     } finally {
       if (token === transitionToken) {
@@ -248,7 +248,7 @@
   }
 
   start().catch((error) => {
-    console.error("County Field Map boot failed", error);
+    console.error("Kane Offline Map boot failed", error);
     if (elements.fatal) showFatal(error.message || String(error));
     if (elements.loading) setLoading("");
   });

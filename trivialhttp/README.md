@@ -1,6 +1,6 @@
-# TrivialHTTP for County Field Map
+# TrivialHTTP for Kane Offline Map
 
-TrivialHTTP serves County Field Map from a local folder and writes only the 16 validated classification ledger files under `project-data/sectors`.
+TrivialHTTP serves Kane Offline Map from a local folder and writes only the 16 validated classification ledger files under `project-data/sectors`.
 
 It binds to `127.0.0.1` only. The storage endpoint accepts only `N11-E06.json` through `N14-E09.json`, rejects traversal and arbitrary filenames, and replaces files atomically.
 
@@ -27,7 +27,7 @@ macOS:
 
 ## Run
 
-From the County Field Map root:
+From the Kane Offline Map root:
 
 ```sh
 trivialhttp/build/trivialhttp --root .

@@ -24,6 +24,9 @@ database/tools/county_db.py
 database/tools/county_ledger.py
 database/tests/test_database.py'
 
+printf '%s\n' 'Checking tracked source checksums...'
+sha256sum -c CHECKSUMS.sha256
+
 printf '%s\n' 'Checking complete application tree...'
 for path in $required_files; do
   if [ ! -f "$path" ]; then

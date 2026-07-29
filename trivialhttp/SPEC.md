@@ -1,6 +1,6 @@
-# County Field Map storage endpoint
+# Kane Offline Map storage endpoint
 
-Current endpoint:
+Current compatibility endpoint:
 
 ```text
 GET  /__county_field_map/sector-state
@@ -9,7 +9,7 @@ HEAD /__county_field_map/sector-state/N11-E06.json
 PUT  /__county_field_map/sector-state/N11-E06.json
 ```
 
-The legacy Kane-Map endpoint remains available so an existing USB installation can be migrated without losing classification state:
+The current endpoint name is retained for County Field Map compatibility. The legacy Kane-Map endpoint also remains available so an existing USB installation can be migrated without losing classification state:
 
 ```text
 /__kane_map/sector-state

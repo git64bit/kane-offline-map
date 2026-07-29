@@ -1,49 +1,8 @@
-Batch 006 replacement full-application verification
+Batch 007 local Linux verification
 
-Accepted SSOT:
-5026482f8e9c390f80fd8e19b67e292e2763b021
-
-Verification platform:
-- Linux
-- Python 3.13.5
-- No C compiler required by the verification workflow
-
-Complete application checks:
-- Required browser application tree: PASS
-- TrivialHTTP source-tree presence check: PASS
-- TrivialHTTP compilation: NOT RUN (outside database-node requirements)
-- Completed sectors.zip import: PASS
-- Accepted archive SHA-256 verification: PASS
-- Python unittest suite: PASS (9 tests)
-- SQLite integrity_check: PASS
-- Foreign-key validation: PASS
-- Migration checksum validation: PASS
-- Accepted-ledger validation: PASS
-- Failed candidate replacement preservation: PASS
-
-Accepted classification:
-- 16 sectors
-- 4,096 inspection cells
-- 262,144 practical cells
-- 72,705 discovered
-- 189,439 muted
-- 0 undiscovered
-
-Generated candidate during verification:
-- Path: project-data/database/kane-county-build.gpkg
-- Size: 40,210,432 bytes
-
-Source-package checks:
-- Complete Batch 004 browser application included
-- TrivialHTTP source included
-- Batch 005 SQL foundation included
-- Batch 006 completed-ledger import included
-- Windows database development launchers excluded
-- Generated GeoPackages excluded
-- Compiled binaries excluded
-- .pyc and __pycache__ excluded
-- Shell scripts tested through explicit bash invocation
-- Verification tested without invoking a C compiler or binary build script
-
-The candidate database hash changes between builds because migration and import timestamps are recorded. The immutable source archive SHA-256 remains:
-19506566f787b11a02036dce8bf800a33b0a64219046c5e0b89d474b862f09d2
+- Tracked source checksums: PASS
+- Complete application tree: PASS
+- Accepted ledger candidate build: PASS
+- Accepted ledger validation: PASS
+- Database tests: 10 passed
+- TrivialHTTP compilation: not performed and not required

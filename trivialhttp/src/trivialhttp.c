@@ -9,7 +9,7 @@ static void print_usage(const char *program) {
   printf("  --no-open     Do not open the default browser.\n");
   printf("  --once        Serve one request, then exit.\n");
   printf("  --help        Show this help.\n\n");
-  printf("County Field Map classification is stored under project-data/sectors relative to --root.\n");
+  printf("Kane Offline Map classification is stored under project-data/sectors relative to --root.\n");
 }
 
 static int parse_port(const char *value, unsigned short *port_out) {

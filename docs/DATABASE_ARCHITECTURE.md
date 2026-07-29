@@ -1,4 +1,4 @@
-# County Field Database Architecture
+# Kane Offline Map Database Architecture
 
 ## Canonical model
 
@@ -31,7 +31,7 @@ Records county identity, schema migrations, source agencies, datasets, harvest r
 
 ### Classification
 
-Records immutable County Field Map releases, sector source hashes, normalized practical-cell classifications, and review requests caused by later development.
+Records immutable Kane Offline Map releases, sector source hashes, normalized practical-cell classifications, and review requests caused by later development.
 
 Batch 006 imports the completed field ledger as the first accepted classification release.
 

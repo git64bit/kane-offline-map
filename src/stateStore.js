@@ -18,7 +18,7 @@
     G.sectorCodes.forEach((sector) => records.set(sector, loadLocalRecord(sector)));
 
     function requireRecord(sector) {
-      if (!sectorSet.has(sector)) throw new Error(`Invalid County Field Map sector: ${sector || "unknown"}`);
+      if (!sectorSet.has(sector)) throw new Error(`Invalid Kane Offline Map sector: ${sector || "unknown"}`);
       return records.get(sector);
     }
 
@@ -175,7 +175,7 @@
 
     function queueWrite(sector) {
       writeQueue = writeQueue.then(() => writeSector(sector)).catch((error) => {
-        console.error("County Field Map sector save failed", error);
+        console.error("Kane Offline Map sector save failed", error);
         setStatus("local", `Browser journal saved; disk write failed: ${error.message}`);
       });
       return writeQueue;

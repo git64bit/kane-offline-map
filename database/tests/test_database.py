@@ -61,6 +61,20 @@ class CountyDatabaseTests(unittest.TestCase):
         errors = county_db.validate_database(self.database)
         self.assertTrue(any("checksum mismatch" in error for error in errors))
 
+    def test_detects_wrong_project_identity(self) -> None:
+        county_db.initialize_database(self.database, force=False)
+        connection = sqlite3.connect(self.database)
+        try:
+            connection.execute(
+                "UPDATE project_setting SET setting_value = ? WHERE setting_key = 'project'",
+                ("county-field-map",),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        errors = county_db.validate_database(self.database)
+        self.assertTrue(any("project identity" in error for error in errors))
+
     def test_empty_foundation_is_not_an_accepted_ledger(self) -> None:
         county_db.initialize_database(self.database, force=False)
         errors = county_db.validate_ledger_database(self.database)

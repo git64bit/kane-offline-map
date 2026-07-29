@@ -101,7 +101,7 @@ void th_serve_sector_api(th_socket_t client, const TrivialHttpOptions *options,
   } else if (!strcmp(request->method, "PUT")) {
     if (!looks_like_sector_json(request, file_name)) {
       th_send_json(client, 400, "Bad Request",
-        "{\"ok\":false,\"error\":\"Invalid County Field Map sector JSON.\"}\n", 0);
+        "{\"ok\":false,\"error\":\"Invalid Kane Offline Map sector JSON.\"}\n", 0);
       return;
     }
     if (atomic_write(target, request->body, request->body_len)) {

@@ -1,6 +1,6 @@
-# County Field Database
+# Kane Offline Map Database
 
-This directory contains the migration-driven SQL and GeoPackage tools for County Field Map.
+This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
 The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store.
 

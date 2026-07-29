@@ -4,7 +4,7 @@
   const CFM = global.CountyFieldMap = global.CountyFieldMap || {};
 
   CFM.constants = Object.freeze({
-    APP_NAME: "County Field Map",
+    APP_NAME: "Kane Offline Map",
     COUNTY_NAME: "Kane County, Illinois",
     FORMAT: "county-field-map-sector-state",
     VERSION: 1,

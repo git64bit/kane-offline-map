@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create, import, and validate the County Field GeoPackage."""
+"""Create, import, and validate the Kane Offline Map GeoPackage."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ import county_ledger
 
 APP_ID = 0x47504B47
 USER_VERSION = 10300
-TOOL_VERSION = "batch-006.1"
+TOOL_VERSION = "batch-007.0"
 REQUIRED_TABLES = {
     "schema_migration",
     "gpkg_spatial_ref_sys",
@@ -104,7 +104,7 @@ def initialize_database(output: Path, force: bool) -> None:
             connection.executemany(
                 "INSERT INTO project_setting(setting_key, setting_value, updated_at) VALUES (?, ?, ?)",
                 [
-                    ("project", "county-field-map", now),
+                    ("project", "kane-offline-map", now),
                     ("database_contract", "county-field-geopackage", now),
                     ("schema_version", str(len(migration_files())), now),
                     ("tool_version", TOOL_VERSION, now),
@@ -223,6 +223,11 @@ def validate_database(path: Path) -> list[str]:
         }
         if srs_ids != {-1, 0, 4326}:
             errors.append("Required GeoPackage spatial reference rows are incomplete.")
+        project_rows = connection.execute(
+            "SELECT setting_value FROM project_setting WHERE setting_key = 'project'"
+        ).fetchall()
+        if project_rows != [("kane-offline-map",)]:
+            errors.append("Kane Offline Map project identity is missing or unexpected.")
         county_rows = connection.execute(
             "SELECT county_name, state_code, fips_code FROM county"
         ).fetchall()

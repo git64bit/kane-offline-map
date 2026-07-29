@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import and validate the completed County Field Map classification ledger."""
+"""Import and validate the completed Kane Offline Map classification ledger."""
 
 from __future__ import annotations
 
@@ -284,7 +284,7 @@ def import_ledger(database: Path, archive: Path, release_key: str | None = None)
                     county_row[0], release_key, sectors[0].source_format,
                     sectors[0].source_version, archive_sha256, source_created,
                     utc_now(), discovered_count, muted_count,
-                    "Completed County Field Map classification baseline imported from immutable JSON archive.",
+                    "Completed Kane Offline Map classification baseline imported from immutable JSON archive.",
                 ),
             )
             release_id = int(cursor.lastrowid)
