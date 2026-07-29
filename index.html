@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <link rel="icon" href="data:,">
+  <title>County Field Map</title>
+  <link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="control-panel" aria-label="County Field Map controls">
+      <header>
+        <p class="eyebrow">County classification ledger</p>
+        <h1>County Field Map</h1>
+        <p class="description">Reduces the county map to roads, water and buildings.</p>
+      </header>
+
+      <section class="control-section">
+        <h2>Classification</h2>
+        <button id="muteSelected" class="button button-dark" type="button" disabled>Mute selected sector</button>
+        <button id="returnUndiscovered" class="button" type="button" disabled>Return to undiscovered</button>
+        <div class="key" aria-label="Classification colors">
+          <span><i class="key-box key-undiscovered"></i>Undiscovered</span>
+          <span><i class="key-box key-discovered"></i>Discovered</span>
+          <span><i class="key-box key-muted"></i>Muted void</span>
+        </div>
+      </section>
+
+      <section class="control-section">
+        <h2>View</h2>
+        <div class="button-row">
+          <button id="backView" class="button" type="button" disabled>Back</button>
+          <button id="countyView" class="button" type="button" disabled>County</button>
+        </div>
+        <div class="button-row">
+          <button id="zoomIn" class="button" type="button" aria-label="Zoom in">Zoom +</button>
+          <button id="zoomOut" class="button" type="button" aria-label="Zoom out">Zoom −</button>
+        </div>
+        <button id="resetView" class="button" type="button">Reset view</button>
+      </section>
+
+      <section class="status-section" aria-live="polite">
+        <h2>Progress</h2>
+        <p id="levelStatus">Starting…</p>
+        <p id="selectionStatus">No practical cell selected</p>
+        <p id="inspectionProgress">Loading classification ledger…</p>
+        <p id="sectorProgress">Loading county progress…</p>
+      </section>
+
+      <footer>
+        <p id="storageStatus" data-kind="connecting">Browser journal starting…</p>
+        <p class="version">County Field Map · Batch 004</p>
+        <button id="muteInspection" class="button button-danger bulk-action" type="button" disabled>Mute all 64 cells</button>
+      </footer>
+    </aside>
+
+    <section class="map-workspace" aria-label="County map classification workspace">
+      <canvas id="mapCanvas">County Field Map requires a browser with Canvas support.</canvas>
+      <div id="loadingMessage" class="map-message" hidden></div>
+      <div id="fatalError" class="map-message map-error" role="alert" hidden></div>
+    </section>
+  </main>
+
+  <script src="portable_config.js"></script>
+  <script src="src/constants.js"></script>
+  <script src="src/grid.js"></script>
+  <script src="src/dataLoader.js"></script>
+  <script src="src/stateStore.js"></script>
+  <script src="src/renderer.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

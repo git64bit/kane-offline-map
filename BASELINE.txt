@@ -1,0 +1,8 @@
+Repository: https://github.com/git64bit/county-field-map
+Branch: main
+Accepted base commit: 5026482f8e9c390f80fd8e19b67e292e2763b021
+Accepted base commit title: Start of SQLite Migration
+Batch: 006 replacement
+Archive type: complete self-contained application
+Development platform: Linux only
+Windows status: final offline runtime target only
