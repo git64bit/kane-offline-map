@@ -19,11 +19,12 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 import county_buildings
+import county_building_refresh
 import county_ledger
 
 APP_ID = 0x47504B47
-USER_VERSION = 10400
-TOOL_VERSION = "batch-008.0"
+USER_VERSION = 10500
+TOOL_VERSION = "batch-009.0"
 REQUIRED_TABLES = {
     "schema_migration",
     "gpkg_spatial_ref_sys",
@@ -44,6 +45,8 @@ REQUIRED_TABLES = {
     "refresh_issue",
     "release_promotion",
     "source_building",
+    "building_release_comparison",
+    "building_feature_change",
 }
 
 
@@ -84,7 +87,9 @@ def apply_migration(connection: sqlite3.Connection, path: Path, migration_id: in
     connection.executescript(f"BEGIN IMMEDIATE;\n{sql}\n{record}\nCOMMIT;")
 
 
-def initialize_database(output: Path, force: bool) -> None:
+def initialize_database(
+    output: Path, force: bool, migration_limit: int | None = None, user_version: int | None = None
+) -> None:
     if output.exists():
         if not force:
             raise RuntimeError(f"Output already exists: {output}")
@@ -95,10 +100,14 @@ def initialize_database(output: Path, force: bool) -> None:
     try:
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute(f"PRAGMA application_id = {APP_ID}")
-        connection.execute(f"PRAGMA user_version = {USER_VERSION}")
+        chosen_version = USER_VERSION if user_version is None else user_version
+        connection.execute(f"PRAGMA user_version = {chosen_version}")
         connection.execute("PRAGMA journal_mode = DELETE")
         connection.execute("PRAGMA synchronous = FULL")
-        for migration_id, path in enumerate(migration_files(), start=1):
+        migrations = migration_files()
+        if migration_limit is not None:
+            migrations = migrations[:migration_limit]
+        for migration_id, path in enumerate(migrations, start=1):
             apply_migration(connection, path, migration_id)
 
         now = utc_now()
@@ -108,7 +117,7 @@ def initialize_database(output: Path, force: bool) -> None:
                 [
                     ("project", "kane-offline-map", now),
                     ("database_contract", "county-field-geopackage", now),
-                    ("schema_version", str(len(migration_files())), now),
+                    ("schema_version", str(len(migrations)), now),
                     ("tool_version", TOOL_VERSION, now),
                     ("refresh_policy", "candidate-build-then-promote", now),
                 ],
@@ -125,10 +134,11 @@ def initialize_database(output: Path, force: bool) -> None:
     finally:
         connection.close()
 
-    errors = validate_database(output)
-    if errors:
-        output.unlink(missing_ok=True)
-        raise RuntimeError("Created database failed validation:\n- " + "\n- ".join(errors))
+    if migration_limit is None:
+        errors = validate_database(output)
+        if errors:
+            output.unlink(missing_ok=True)
+            raise RuntimeError("Created database failed validation:\n- " + "\n- ".join(errors))
 
 
 def build_ledger_database(
@@ -252,7 +262,7 @@ def validate_database(path: Path) -> list[str]:
         else:
             errors.extend(validate_migrations(connection))
             errors.extend(county_ledger.classification_errors(connection, require_accepted=False))
-            errors.extend(county_buildings.building_errors(connection, require_accepted=False))
+            errors.extend(county_building_refresh.building_errors(connection, require_accepted=False))
 
         srs_ids = {
             row[0] for row in connection.execute(
@@ -298,7 +308,7 @@ def validate_building_database(path: Path) -> list[str]:
         return errors
     connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     try:
-        errors.extend(county_buildings.building_errors(connection, require_accepted=True))
+        errors.extend(county_building_refresh.building_errors(connection, require_accepted=True))
     except sqlite3.Error as exc:
         errors.append(f"Building validation error: {exc}")
     finally:
@@ -343,7 +353,7 @@ def database_info(path: Path) -> dict[str, object]:
                 for row in migrations
             ],
             **county_ledger.ledger_info(path),
-            **county_buildings.building_info(path),
+            **county_building_refresh.building_info(path),
         }
     finally:
         connection.close()
@@ -378,6 +388,17 @@ def build_parser() -> argparse.ArgumentParser:
     buildings_parser.add_argument("--published-at")
     buildings_parser.add_argument("--id-property")
     buildings_parser.add_argument("--force", action="store_true")
+
+    refresh_parser = subparsers.add_parser(
+        "refresh-buildings",
+        help="Safely compare and promote a new building release in an accepted database.",
+    )
+    refresh_parser.add_argument("database", type=Path)
+    refresh_parser.add_argument("--geojson", type=Path, required=True)
+    refresh_parser.add_argument("--release-key")
+    refresh_parser.add_argument("--source-uri")
+    refresh_parser.add_argument("--published-at")
+    refresh_parser.add_argument("--id-property")
 
     import_parser = subparsers.add_parser(
         "import-ledger", help="Import the completed field ledger into an existing candidate."
@@ -431,6 +452,13 @@ def main() -> int:
             info = build_building_database(
                 args.output, args.archive, args.geojson, args.force,
                 args.ledger_release_key, args.release_key, args.source_uri,
+                args.published_at, args.id_property,
+            )
+            print(json.dumps(info, indent=2))
+            return 0
+        if args.command == "refresh-buildings":
+            info = county_building_refresh.refresh_building_database(
+                args.database, args.geojson, args.release_key, args.source_uri,
                 args.published_at, args.id_property,
             )
             print(json.dumps(info, indent=2))

@@ -45,16 +45,16 @@ Future migrations will add feature-to-cell indexes, building clusters, road grap
 
 ### Change history
 
-Batch 008 accepts only the first building release and explicitly refuses a second accepted release. The next refresh stage will compare a new candidate with the accepted release. Added, removed, geometry-changed, and attribute-changed features will be recorded rather than overwriting history.
+Batch 009 adds `building_release_comparison` and `building_feature_change`. A refresh compares exact stable source IDs and records added, removed, unchanged, geometry-only, attribute-only, and combined modifications. The former accepted release becomes `superseded`; its source file and every `source_building` row remain unchanged. Exactly one building release remains accepted.
 
 ## Candidate-build contract
 
 1. Preserve each source release unchanged.
 2. Build a separate temporary GeoPackage.
 3. Validate schema, integrity, foreign keys, migration hashes, source hashes, counts, and normalized identities.
-4. Replace the named candidate only after validation succeeds.
-5. Never modify an accepted release in place.
-6. Archive the previous accepted database during promotion.
+4. Replace the accepted GeoPackage path only after the candidate validates.
+5. Never mutate historical source feature rows.
+6. Preserve prior releases inside the accepted database as superseded history.
 
 A failed build or refresh leaves the existing candidate and accepted databases unchanged.
 

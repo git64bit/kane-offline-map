@@ -2,7 +2,7 @@
 
 This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
-The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 also imports one immutable building GeoJSON release as native GeoPackage geometry.
+The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history.
 
 ## Development environment
 
@@ -14,7 +14,7 @@ Requirements:
 - Python 3.9 or newer
 - No third-party Python packages
 
-Python supplies the SQLite engine and the Batch 008 GeoPackage geometry encoder. Later reprojection or source-format adapters may use GDAL as an external Linux tool, but the database contract does not depend on it.
+Python supplies the SQLite engine, GeoPackage geometry encoder, migration upgrader, and release comparison tools. Later reprojection or source-format adapters may use GDAL as an external Linux tool, but the database contract does not depend on it.
 
 Shell scripts are invoked through `bash`; executable permission bits are not required.
 
@@ -58,6 +58,19 @@ bash database/build-building-database.sh database/fixtures/buildings-sample.geoj
 
 The fixture is not authoritative county data. See `docs/BUILDING_SOURCE_IMPORT.md`.
 
+## Refresh the accepted building release
+
+After an accepted building database exists:
+
+```sh
+bash database/refresh-building-database.sh /path/to/new-buildings.geojson NEW_RELEASE_KEY
+bash database/validate-building-database.sh
+```
+
+The refresh command copies the accepted GeoPackage to a temporary candidate, applies pending migrations to that copy, imports the new source release, compares stable source IDs, validates the complete database, and atomically replaces the accepted path only after success. The previous building release and all of its feature rows remain in the database with `superseded` status.
+
+The comparison records added, removed, unchanged, geometry-only, attribute-only, and combined modifications. A failed import or validation leaves the accepted file byte-for-byte unchanged.
+
 ## Validate the imported ledger
 
 ```sh
@@ -85,6 +98,11 @@ PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py build-ledger \
   --archive database/input/sectors.zip \
   --output project-data/database/kane-county-build.gpkg \
   --force
+
+PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py refresh-buildings \
+  project-data/database/kane-county-build.gpkg \
+  --geojson /path/to/new-buildings.geojson \
+  --release-key NEW_RELEASE_KEY
 
 PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py validate-ledger \
   project-data/database/kane-county-build.gpkg

@@ -12,6 +12,8 @@ import struct
 from pathlib import Path
 from typing import Any, Iterable
 
+import county_building_refresh
+
 SRS_ID = 4326
 AGENCY_KEY = "kane-county-gis"
 DATASET_KEY = "buildings"
@@ -268,13 +270,13 @@ def import_buildings(
         with connection:
             dataset_id = ensure_dataset(connection, id_property, now)
             accepted = connection.execute(
-                "SELECT release_key FROM source_release WHERE dataset_id = ? AND status = 'accepted'",
+                """
+                SELECT release_id, release_key FROM source_release
+                WHERE dataset_id = ? AND status = 'accepted'
+                """,
                 (dataset_id,),
             ).fetchone()
-            if accepted:
-                raise RuntimeError(
-                    f"An accepted building release already exists: {accepted[0]}. Refresh diff is not enabled yet."
-                )
+            previous_release_id = accepted[0] if accepted else None
             duplicate = connection.execute(
                 "SELECT release_key FROM source_release WHERE dataset_id = ? AND (release_key = ? OR content_sha256 = ?)",
                 (dataset_id, chosen_key, source_hash),
@@ -283,10 +285,11 @@ def import_buildings(
                 raise RuntimeError(f"Building source release already imported: {duplicate[0]}")
             run_cursor = connection.execute(
                 """
-                INSERT INTO harvest_run(dataset_id, started_at, status, tool_version)
-                VALUES (?, ?, 'started', ?)
+                INSERT INTO harvest_run(
+                    dataset_id, previous_release_id, started_at, status, tool_version
+                ) VALUES (?, ?, ?, 'started', ?)
                 """,
-                (dataset_id, now, "batch-008.0"),
+                (dataset_id, previous_release_id, now, "batch-009.0"),
             )
             run_id = run_cursor.lastrowid
             release_cursor = connection.execute(
@@ -304,7 +307,7 @@ def import_buildings(
                     now,
                     source_uri,
                     source_hash,
-                    "Initial immutable building release import.",
+                    "Immutable building release import with refresh comparison when applicable.",
                 ),
             )
             release_id = release_cursor.lastrowid
@@ -347,22 +350,49 @@ def import_buildings(
                     for item in buildings
                 ],
             )
-            min_x = min(item["bounds"][0] for item in buildings)
-            min_y = min(item["bounds"][1] for item in buildings)
-            max_x = max(item["bounds"][2] for item in buildings)
-            max_y = max(item["bounds"][3] for item in buildings)
+            extent = connection.execute(
+                "SELECT MIN(min_x), MIN(min_y), MAX(max_x), MAX(max_y) FROM source_building"
+            ).fetchone()
             connection.execute(
                 """
                 UPDATE gpkg_contents
                 SET last_change = ?, min_x = ?, min_y = ?, max_x = ?, max_y = ?
                 WHERE table_name = 'source_building'
                 """,
-                (now, min_x, min_y, max_x, max_y),
+                (now, *extent),
             )
-            connection.execute(
-                "UPDATE source_release SET status = 'accepted', accepted_at = ? WHERE release_id = ?",
-                (now, release_id),
-            )
+            if previous_release_id is not None:
+                county_building_refresh.compare_releases(
+                    connection, run_id, previous_release_id, release_id, now
+                )
+                connection.execute(
+                    """
+                    UPDATE source_release
+                    SET status = 'superseded', superseded_at = ?
+                    WHERE release_id = ?
+                    """,
+                    (now, previous_release_id),
+                )
+            release_columns = {
+                row[1] for row in connection.execute("PRAGMA table_info(source_release)")
+            }
+            if "superseded_at" in release_columns:
+                connection.execute(
+                    """
+                    UPDATE source_release
+                    SET status = 'accepted', accepted_at = ?, superseded_at = NULL
+                    WHERE release_id = ?
+                    """,
+                    (now, release_id),
+                )
+            else:
+                connection.execute(
+                    """
+                    UPDATE source_release SET status = 'accepted', accepted_at = ?
+                    WHERE release_id = ?
+                    """,
+                    (now, release_id),
+                )
             connection.execute(
                 """
                 UPDATE harvest_run
@@ -371,129 +401,6 @@ def import_buildings(
                 """,
                 (now, release_id, run_id),
             )
-        return building_info(database)
-    finally:
-        connection.close()
-
-
-def geometry_blob_error(blob: bytes) -> str | None:
-    if len(blob) < 45:
-        return "geometry BLOB is shorter than the GeoPackage header and WKB type"
-    if blob[:2] != b"GP" or blob[2] != 0 or blob[3] != 3:
-        return "geometry BLOB has an invalid GeoPackage header"
-    if struct.unpack("<i", blob[4:8])[0] != SRS_ID:
-        return "geometry BLOB uses an unexpected SRS"
-    if blob[40] != 1:
-        return "geometry WKB is not little endian"
-    geometry_type = struct.unpack("<I", blob[41:45])[0]
-    if geometry_type not in (3, 6):
-        return "geometry WKB is not Polygon or MultiPolygon"
-    return None
-
-
-def building_errors(connection: sqlite3.Connection, require_accepted: bool) -> list[str]:
-    errors: list[str] = []
-    contents = connection.execute(
-        "SELECT data_type, srs_id FROM gpkg_contents WHERE table_name = 'source_building'"
-    ).fetchall()
-    if contents != [("features", SRS_ID)]:
-        errors.append("source_building is not correctly registered in gpkg_contents.")
-    columns = connection.execute(
-        """
-        SELECT column_name, geometry_type_name, srs_id, z, m
-        FROM gpkg_geometry_columns WHERE table_name = 'source_building'
-        """
-    ).fetchall()
-    if columns != [("geometry", "GEOMETRY", SRS_ID, 0, 0)]:
-        errors.append("source_building is not correctly registered in gpkg_geometry_columns.")
-    accepted_rows = connection.execute(
-        """
-        SELECT r.release_id, r.release_key, r.content_sha256
-        FROM source_release r JOIN dataset d ON d.dataset_id = r.dataset_id
-        WHERE d.dataset_key = ? AND r.status = 'accepted'
-        """,
-        (DATASET_KEY,),
-    ).fetchall()
-    if require_accepted and len(accepted_rows) != 1:
-        errors.append(f"Accepted building release count is {len(accepted_rows)}; expected 1.")
-    for release_id, release_key, release_hash in accepted_rows:
-        source_files = connection.execute(
-            "SELECT sha256 FROM source_file WHERE release_id = ?", (release_id,)
-        ).fetchall()
-        if source_files != [(release_hash,)]:
-            errors.append(f"Building release {release_key} source file hash is inconsistent.")
-        count = connection.execute(
-            "SELECT COUNT(*) FROM source_building WHERE release_id = ?", (release_id,)
-        ).fetchone()[0]
-        if count == 0:
-            errors.append(f"Building release {release_key} contains no features.")
-        for source_id, blob, geometry_hash, attributes_json, attributes_hash, content_hash in connection.execute(
-            """
-            SELECT source_feature_id, geometry, geometry_sha256, attributes_json,
-                   attributes_sha256, content_sha256
-            FROM source_building WHERE release_id = ? ORDER BY source_ordinal
-            """,
-            (release_id,),
-        ):
-            blob_error = geometry_blob_error(blob)
-            if blob_error:
-                errors.append(f"Building {source_id} {blob_error}.")
-                continue
-            wkb_hash = sha256_bytes(blob[40:])
-            if geometry_hash != wkb_hash:
-                errors.append(f"Building {source_id} geometry hash is inconsistent.")
-            try:
-                parsed_attributes = json.loads(attributes_json)
-                expected_attributes = sha256_bytes(canonical_json(parsed_attributes).encode("utf-8"))
-            except (json.JSONDecodeError, TypeError, ValueError):
-                errors.append(f"Building {source_id} attributes JSON is invalid.")
-                continue
-            if attributes_hash != expected_attributes:
-                errors.append(f"Building {source_id} attributes hash is inconsistent.")
-            expected_content = sha256_bytes(
-                canonical_json(
-                    {
-                        "source_feature_id": source_id,
-                        "geometry_sha256": geometry_hash,
-                        "attributes_sha256": attributes_hash,
-                    }
-                ).encode("utf-8")
-            )
-            if content_hash != expected_content:
-                errors.append(f"Building {source_id} content hash is inconsistent.")
-    return errors
-
-
-def building_info(path: Path) -> dict[str, Any]:
-    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-    try:
-        row = connection.execute(
-            """
-            SELECT r.release_key, r.source_published_at, r.harvested_at, r.accepted_at,
-                   r.source_uri, r.content_sha256, COUNT(b.source_building_id),
-                   MIN(b.min_x), MIN(b.min_y), MAX(b.max_x), MAX(b.max_y)
-            FROM source_release r
-            JOIN dataset d ON d.dataset_id = r.dataset_id
-            LEFT JOIN source_building b ON b.release_id = r.release_id
-            WHERE d.dataset_key = ? AND r.status = 'accepted'
-            GROUP BY r.release_id
-            """,
-            (DATASET_KEY,),
-        ).fetchone()
-        if row is None:
-            return {}
-        return {
-            "accepted_buildings": {
-                "release_key": row[0],
-                "source_published_at": row[1],
-                "harvested_at": row[2],
-                "accepted_at": row[3],
-                "source_uri": row[4],
-                "content_sha256": row[5],
-                "feature_count": row[6],
-                "bounds": {"min_x": row[7], "min_y": row[8], "max_x": row[9], "max_y": row[10]},
-                "srs_id": SRS_ID,
-            }
-        }
+        return {"release_key": chosen_key, "feature_count": len(buildings)}
     finally:
         connection.close()

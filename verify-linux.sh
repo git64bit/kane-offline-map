@@ -21,9 +21,13 @@ trivialhttp/src/http.c
 trivialhttp/src/sector_storage.c
 database/input/sectors.zip
 database/fixtures/buildings-sample.geojson
+database/fixtures/buildings-refresh-v2.geojson
 database/migrations/0005_source_buildings.sql
+database/migrations/0006_building_refresh.sql
+database/refresh-building-database.sh
 database/tools/county_db.py
 database/tools/county_buildings.py
+database/tools/county_building_refresh.py
 database/tools/county_ledger.py
 database/tests/test_database.py
 database/tests/test_buildings.py'
@@ -56,6 +60,11 @@ bash database/build-building-database.sh \
   database/fixtures/buildings-sample.geojson \
   fixture-buildings-v1
 
+printf '%s\n' 'Refreshing fixture building release with comparison...'
+bash database/refresh-building-database.sh \
+  database/fixtures/buildings-refresh-v2.geojson \
+  fixture-buildings-v2
+
 printf '%s\n' 'Validating accepted ledger candidate...'
 bash database/validate-ledger-database.sh
 
@@ -66,5 +75,5 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The building release used above is a synthetic fixture, not county source data.'
+printf '%s\n' 'Both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'

@@ -1,0 +1,60 @@
+{
+  "type": "FeatureCollection",
+  "name": "Kane Offline Map building refresh fixture v2",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "fixture-building-001",
+      "properties": {
+        "name": "Fixture Building One",
+        "building_type": "detached"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-88.4010, 41.9010],
+          [-88.4000, 41.9010],
+          [-88.4000, 41.9020],
+          [-88.4010, 41.9020],
+          [-88.4010, 41.9010]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-building-002",
+      "properties": {
+        "name": "Fixture Building Two Expanded",
+        "building_type": "commercial"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-88.3992, 41.9008],
+          [-88.3968, 41.9008],
+          [-88.3968, 41.9032],
+          [-88.3992, 41.9032],
+          [-88.3992, 41.9008]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-building-004",
+      "properties": {
+        "name": "Fixture Building Four",
+        "building_type": "industrial"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-88.3920, 41.9010],
+          [-88.3900, 41.9010],
+          [-88.3900, 41.9030],
+          [-88.3920, 41.9030],
+          [-88.3920, 41.9010]
+        ]]
+      }
+    }
+  ]
+}

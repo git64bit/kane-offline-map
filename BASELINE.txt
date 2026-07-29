@@ -1,8 +1,7 @@
 Repository: https://github.com/git64bit/kane-offline-map
 Branch: main
-Accepted base commit: 7a7ce01279dcdf526982c3a74c262d59ccca1fc1
-Accepted base commit title: Import complete Kane Offline Map baseline
-Batch: 007
-Delivery type: Git format-patch applied with git am
+Accepted base commit: d9e0b05493a1e100f57fb465fb81240437404a2c
+Accepted base batch: 008
+Current delivery: Batch 009 Git format-patch
 Development platform: Linux only
 Windows status: final offline runtime target only

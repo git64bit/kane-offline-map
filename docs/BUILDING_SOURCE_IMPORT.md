@@ -4,7 +4,7 @@
 
 Batch 008 establishes the first repeatable source-geometry import path. It accepts one immutable countywide building GeoJSON release and stores it as a native GeoPackage feature table alongside the accepted field classification.
 
-This batch does not harvest a county source and does not perform a year-to-year refresh. It defines and tests the import contract that a later harvester will call.
+The import contract does not harvest a county source. Batch 009 extends it with an explicit refresh path for later authoritative harvests.
 
 ## Accepted input
 
@@ -44,11 +44,20 @@ The table is registered in `gpkg_contents` as `features` and in `gpkg_geometry_c
 
 The source GeoJSON file is recorded in `source_file`, while `source_release` and `harvest_run` preserve release identity and import history.
 
-## Initial-release rule
+## Release refresh rule
 
-Batch 008 permits exactly one accepted building release. A second accepted release is rejected with an explicit message because refresh comparison and supersession are not implemented yet.
+The first import creates the accepted building release. A later refresh is built against a temporary copy of the accepted GeoPackage. Pending migrations are applied to that copy before the candidate release is imported.
 
-This prevents an accidental overwrite from being mistaken for a refresh. The next refresh batch will compare a new candidate against the accepted release before promotion.
+Features are matched by exact stable source identifier. Each identity is recorded as:
+
+- `added`;
+- `removed`;
+- `unchanged`;
+- `geometry_changed`;
+- `attributes_changed`; or
+- `modified` when geometry and attributes both changed.
+
+The complete comparison is stored in `building_release_comparison` and `building_feature_change`. The previous release becomes `superseded`, while all prior source rows remain immutable. A failed refresh discards the temporary candidate and leaves the accepted database unchanged.
 
 ## Production command
 
@@ -56,10 +65,11 @@ From the repository root:
 
 ```sh
 bash database/build-building-database.sh /absolute/or/relative/buildings.geojson RELEASE_KEY
+bash database/refresh-building-database.sh /absolute/or/relative/new-buildings.geojson NEW_RELEASE_KEY
 bash database/validate-building-database.sh
 ```
 
-The command always builds a separate temporary candidate containing:
+The initial build command creates a separate temporary candidate containing:
 
 1. the accepted field ledger; and
 2. the accepted building source release.
@@ -70,4 +80,4 @@ The named output is replaced only after complete validation succeeds.
 
 `database/fixtures/buildings-sample.geojson` is a synthetic three-feature test fixture. It is not Kane County source data and must never be represented as an authoritative release.
 
-`verify-linux.sh` imports the fixture solely to exercise the full production command and spatial validation path.
+`verify-linux.sh` imports the first fixture and refreshes it with `buildings-refresh-v2.geojson` solely to exercise the production import, comparison, supersession, and validation paths. Neither fixture is authoritative.

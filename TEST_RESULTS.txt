@@ -1,11 +1,13 @@
-Batch 008 local Linux verification
+Batch 009 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
 - Accepted ledger candidate build: PASS
-- Synthetic building release import: PASS
-- Accepted ledger validation: PASS
-- Native GeoPackage building validation: PASS
-- Database tests: 16 passed
+- Synthetic building release v1 import: PASS
+- Synthetic building release v2 refresh: PASS
+- Release comparison and supersession validation: PASS
+- Batch 008 database-copy migration upgrade: PASS
+- Candidate failure preserves accepted database: PASS
+- Database tests: 22 passed
 - TrivialHTTP compilation: not performed and not required
 - Authoritative county building data: not bundled or harvested
