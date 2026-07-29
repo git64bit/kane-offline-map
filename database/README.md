@@ -2,7 +2,7 @@
 
 This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
-The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store.
+The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 also imports one immutable building GeoJSON release as native GeoPackage geometry.
 
 ## Development environment
 
@@ -14,7 +14,7 @@ Requirements:
 - Python 3.9 or newer
 - No third-party Python packages
 
-Python supplies the SQLite engine used by this batch. Future geometry imports may use GDAL as an external Linux tool, but the database contract does not depend on it.
+Python supplies the SQLite engine and the Batch 008 GeoPackage geometry encoder. Later reprojection or source-format adapters may use GDAL as an external Linux tool, but the database contract does not depend on it.
 
 Shell scripts are invoked through `bash`; executable permission bits are not required.
 
@@ -42,6 +42,21 @@ The build command:
 6. atomically replaces `../project-data/database/kane-county-build.gpkg` only after success.
 
 A failed rebuild leaves the existing candidate database unchanged.
+
+## Build a candidate with buildings
+
+```sh
+bash database/build-building-database.sh /path/to/buildings.geojson RELEASE_KEY
+bash database/validate-building-database.sh
+```
+
+The input must contain two-dimensional EPSG:4326 Polygon or MultiPolygon features with stable source identifiers. A synthetic fixture is available only for verification:
+
+```sh
+bash database/build-building-database.sh database/fixtures/buildings-sample.geojson fixture-buildings-v1
+```
+
+The fixture is not authoritative county data. See `docs/BUILDING_SOURCE_IMPORT.md`.
 
 ## Validate the imported ledger
 
@@ -76,6 +91,13 @@ PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py validate-ledger \
 
 PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py info \
   project-data/database/kane-county-build.gpkg
+
+PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py build-buildings \
+  --archive database/input/sectors.zip \
+  --geojson /path/to/buildings.geojson \
+  --output project-data/database/kane-county-build.gpkg \
+  --release-key RELEASE_KEY \
+  --force
 ```
 
 `import-ledger` is also available for an already initialized candidate database. It refuses to import the same release key or archive hash twice.

@@ -41,7 +41,7 @@ The browser keeps a compact local safety journal. When the included TrivialHTTP 
 project-data/sectors/
 ```
 
-The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow.
+The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow. Batch 008 adds the first native source-geometry table and a repeatable building GeoJSON import contract.
 
 ## Development and delivery environment
 
@@ -65,9 +65,9 @@ bash verify-linux.sh
 
 This command:
 
-1. verifies that the complete application source tree is present;
-2. creates the candidate GeoPackage from the completed ledger;
-3. validates the accepted ledger; and
+1. verifies tracked source checksums and the complete application tree;
+2. creates a candidate GeoPackage from the completed ledger and synthetic building fixture;
+3. validates the accepted ledger and building source release; and
 4. runs the database test suite.
 
 It does not compile TrivialHTTP and does not require a C compiler.
@@ -76,7 +76,7 @@ Generated binaries, GeoPackages, and Python cache files are build products and a
 
 ## TrivialHTTP
 
-TrivialHTTP source is included but is outside the Batch 006 verification path. Build it only on a Linux host configured for C development.
+TrivialHTTP source is included but is outside the database verification path. Build it only on a Linux host configured for C development.
 
 Linux build:
 
@@ -102,6 +102,8 @@ trivialhttp/build/trivialhttp --root .
 ```sh
 bash database/build-ledger-database.sh
 bash database/validate-ledger-database.sh
+bash database/build-building-database.sh /path/to/buildings.geojson RELEASE_KEY
+bash database/validate-building-database.sh
 bash database/run-tests.sh
 ```
 

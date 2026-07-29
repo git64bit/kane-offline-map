@@ -20,9 +20,13 @@ trivialhttp/src/platform.c
 trivialhttp/src/http.c
 trivialhttp/src/sector_storage.c
 database/input/sectors.zip
+database/fixtures/buildings-sample.geojson
+database/migrations/0005_source_buildings.sql
 database/tools/county_db.py
+database/tools/county_buildings.py
 database/tools/county_ledger.py
-database/tests/test_database.py'
+database/tests/test_database.py
+database/tests/test_buildings.py'
 
 printf '%s\n' 'Checking tracked source checksums...'
 sha256sum -c CHECKSUMS.sha256
@@ -47,14 +51,20 @@ if sys.version_info < (3, 9):
 print(f"Python {sys.version.split()[0]}")
 PY
 
-printf '%s\n' 'Building accepted ledger candidate...'
-bash database/build-ledger-database.sh
+printf '%s\n' 'Building ledger and fixture building candidate...'
+bash database/build-building-database.sh \
+  database/fixtures/buildings-sample.geojson \
+  fixture-buildings-v1
 
 printf '%s\n' 'Validating accepted ledger candidate...'
 bash database/validate-ledger-database.sh
+
+printf '%s\n' 'Validating accepted building candidate...'
+bash database/validate-building-database.sh
 
 printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
+printf '%s\n' 'The building release used above is a synthetic fixture, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'

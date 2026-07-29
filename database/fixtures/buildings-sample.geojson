@@ -1,0 +1,84 @@
+{
+  "type": "FeatureCollection",
+  "name": "Kane Offline Map building import fixture",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "fixture-building-001",
+      "properties": {
+        "name": "Fixture Building One",
+        "building_type": "detached"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-88.4010, 41.9010],
+            [-88.4000, 41.9010],
+            [-88.4000, 41.9020],
+            [-88.4010, 41.9020],
+            [-88.4010, 41.9010]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-building-002",
+      "properties": {
+        "name": "Fixture Building Two",
+        "building_type": "commercial"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-88.3990, 41.9010],
+            [-88.3970, 41.9010],
+            [-88.3970, 41.9030],
+            [-88.3990, 41.9030],
+            [-88.3990, 41.9010]
+          ],
+          [
+            [-88.3985, 41.9015],
+            [-88.3975, 41.9015],
+            [-88.3975, 41.9025],
+            [-88.3985, 41.9025],
+            [-88.3985, 41.9015]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-building-003",
+      "properties": {
+        "name": "Fixture Building Three",
+        "building_type": "multi-part"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [-88.3960, 41.9010],
+              [-88.3950, 41.9010],
+              [-88.3950, 41.9020],
+              [-88.3960, 41.9020],
+              [-88.3960, 41.9010]
+            ]
+          ],
+          [
+            [
+              [-88.3940, 41.9010],
+              [-88.3930, 41.9010],
+              [-88.3930, 41.9020],
+              [-88.3940, 41.9020],
+              [-88.3940, 41.9010]
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

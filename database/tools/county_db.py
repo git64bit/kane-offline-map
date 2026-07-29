@@ -18,11 +18,12 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
+import county_buildings
 import county_ledger
 
 APP_ID = 0x47504B47
-USER_VERSION = 10300
-TOOL_VERSION = "batch-007.0"
+USER_VERSION = 10400
+TOOL_VERSION = "batch-008.0"
 REQUIRED_TABLES = {
     "schema_migration",
     "gpkg_spatial_ref_sys",
@@ -42,6 +43,7 @@ REQUIRED_TABLES = {
     "classification_review",
     "refresh_issue",
     "release_promotion",
+    "source_building",
 }
 
 
@@ -156,6 +158,41 @@ def build_ledger_database(
         temporary.unlink(missing_ok=True)
 
 
+def build_building_database(
+    output: Path,
+    archive: Path,
+    geojson: Path,
+    force: bool,
+    ledger_release_key: str | None,
+    building_release_key: str | None,
+    source_uri: str | None,
+    published_at: str | None,
+    id_property: str | None,
+) -> dict[str, object]:
+    if output.exists() and not force:
+        raise RuntimeError(f"Output already exists: {output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary_name = tempfile.mkstemp(
+        prefix=f".{output.name}.", suffix=".candidate", dir=output.parent
+    )
+    os.close(handle)
+    temporary = Path(temporary_name)
+    temporary.unlink()
+    try:
+        initialize_database(temporary, force=False)
+        county_ledger.import_ledger(temporary, archive, ledger_release_key)
+        county_buildings.import_buildings(
+            temporary, geojson, building_release_key, source_uri, published_at, id_property
+        )
+        errors = validate_building_database(temporary)
+        if errors:
+            raise RuntimeError("Candidate building database failed validation:\n- " + "\n- ".join(errors))
+        os.replace(temporary, output)
+        return database_info(output)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def fetch_table_names(connection: sqlite3.Connection) -> set[str]:
     rows = connection.execute(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
@@ -215,6 +252,7 @@ def validate_database(path: Path) -> list[str]:
         else:
             errors.extend(validate_migrations(connection))
             errors.extend(county_ledger.classification_errors(connection, require_accepted=False))
+            errors.extend(county_buildings.building_errors(connection, require_accepted=False))
 
         srs_ids = {
             row[0] for row in connection.execute(
@@ -249,6 +287,20 @@ def validate_ledger_database(path: Path) -> list[str]:
         errors.extend(county_ledger.classification_errors(connection, require_accepted=True))
     except sqlite3.Error as exc:
         errors.append(f"Classification validation error: {exc}")
+    finally:
+        connection.close()
+    return errors
+
+
+def validate_building_database(path: Path) -> list[str]:
+    errors = validate_ledger_database(path)
+    if errors or not path.is_file():
+        return errors
+    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        errors.extend(county_buildings.building_errors(connection, require_accepted=True))
+    except sqlite3.Error as exc:
+        errors.append(f"Building validation error: {exc}")
     finally:
         connection.close()
     return errors
@@ -291,6 +343,7 @@ def database_info(path: Path) -> dict[str, object]:
                 for row in migrations
             ],
             **county_ledger.ledger_info(path),
+            **county_buildings.building_info(path),
         }
     finally:
         connection.close()
@@ -312,6 +365,20 @@ def build_parser() -> argparse.ArgumentParser:
     build_parser.add_argument("--release-key")
     build_parser.add_argument("--force", action="store_true")
 
+    buildings_parser = subparsers.add_parser(
+        "build-buildings",
+        help="Build a candidate with the accepted ledger and one building GeoJSON release.",
+    )
+    buildings_parser.add_argument("--archive", type=Path, required=True)
+    buildings_parser.add_argument("--geojson", type=Path, required=True)
+    buildings_parser.add_argument("--output", type=Path, required=True)
+    buildings_parser.add_argument("--ledger-release-key")
+    buildings_parser.add_argument("--release-key")
+    buildings_parser.add_argument("--source-uri")
+    buildings_parser.add_argument("--published-at")
+    buildings_parser.add_argument("--id-property")
+    buildings_parser.add_argument("--force", action="store_true")
+
     import_parser = subparsers.add_parser(
         "import-ledger", help="Import the completed field ledger into an existing candidate."
     )
@@ -326,6 +393,11 @@ def build_parser() -> argparse.ArgumentParser:
         "validate-ledger", help="Require and validate one accepted classification release."
     )
     validate_ledger_parser.add_argument("database", type=Path)
+
+    validate_buildings_parser = subparsers.add_parser(
+        "validate-buildings", help="Require and validate one accepted building release."
+    )
+    validate_buildings_parser.add_argument("database", type=Path)
 
     info_parser = subparsers.add_parser("info", help="Print database metadata as JSON.")
     info_parser.add_argument("database", type=Path)
@@ -355,6 +427,14 @@ def main() -> int:
             )
             print(json.dumps(info, indent=2))
             return 0
+        if args.command == "build-buildings":
+            info = build_building_database(
+                args.output, args.archive, args.geojson, args.force,
+                args.ledger_release_key, args.release_key, args.source_uri,
+                args.published_at, args.id_property,
+            )
+            print(json.dumps(info, indent=2))
+            return 0
         if args.command == "import-ledger":
             errors = validate_database(args.database)
             if errors:
@@ -367,6 +447,10 @@ def main() -> int:
         if args.command == "validate-ledger":
             return print_validation(
                 validate_ledger_database(args.database), args.database, "classification ledger"
+            )
+        if args.command == "validate-buildings":
+            return print_validation(
+                validate_building_database(args.database), args.database, "building release"
             )
         if args.command == "info":
             info = database_info(args.database)

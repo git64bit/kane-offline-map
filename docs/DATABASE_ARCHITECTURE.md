@@ -37,7 +37,7 @@ Batch 006 imports the completed field ledger as the first accepted classificatio
 
 ### Source geometry
 
-Future migrations will add normalized building, road, water, parcel, and address feature tables. Source releases remain immutable.
+Batch 008 adds `source_building` as the first native GeoPackage feature table. Each immutable building release preserves source identity, attributes, Polygon or MultiPolygon geometry, content hashes, bounds, and source-file provenance. Future migrations will add roads, water, parcels, and addresses.
 
 ### Derived data
 
@@ -45,7 +45,7 @@ Future migrations will add feature-to-cell indexes, building clusters, road grap
 
 ### Change history
 
-New harvests are compared with accepted releases. Added, removed, geometry-changed, and attribute-changed features are recorded rather than overwriting history.
+Batch 008 accepts only the first building release and explicitly refuses a second accepted release. The next refresh stage will compare a new candidate with the accepted release. Added, removed, geometry-changed, and attribute-changed features will be recorded rather than overwriting history.
 
 ## Candidate-build contract
 
