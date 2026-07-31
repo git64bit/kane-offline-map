@@ -22,15 +22,23 @@ trivialhttp/src/sector_storage.c
 database/input/sectors.zip
 database/fixtures/buildings-sample.geojson
 database/fixtures/buildings-refresh-v2.geojson
+database/fixtures/county-boundary-sample.geojson
 database/migrations/0005_source_buildings.sql
 database/migrations/0006_building_refresh.sql
+database/migrations/0007_spatial_cell_index.sql
+database/calibrate-spatial-database.sh
 database/refresh-building-database.sh
 database/tools/county_db.py
+database/tools/county_cli.py
+database/tools/county_geometry.py
+database/tools/county_grid.py
 database/tools/county_buildings.py
 database/tools/county_building_refresh.py
 database/tools/county_ledger.py
+database/tools/county_spatial.py
 database/tests/test_database.py
-database/tests/test_buildings.py'
+database/tests/test_buildings.py
+database/tests/test_spatial.py'
 
 printf '%s\n' 'Checking tracked source checksums...'
 sha256sum -c CHECKSUMS.sha256
@@ -60,7 +68,11 @@ bash database/build-building-database.sh \
   database/fixtures/buildings-sample.geojson \
   fixture-buildings-v1
 
-printf '%s\n' 'Refreshing fixture building release with comparison...'
+printf '%s\n' 'Calibrating the practical-cell grid from the fixture boundary...'
+bash database/calibrate-spatial-database.sh \
+  database/fixtures/county-boundary-sample.geojson
+
+printf '%s\n' 'Refreshing fixture building release with comparison and spatial indexing...'
 bash database/refresh-building-database.sh \
   database/fixtures/buildings-refresh-v2.geojson \
   fixture-buildings-v2
@@ -71,9 +83,12 @@ bash database/validate-ledger-database.sh
 printf '%s\n' 'Validating accepted building candidate...'
 bash database/validate-building-database.sh
 
+printf '%s\n' 'Validating practical-cell spatial index and review triggers...'
+bash database/validate-spatial-database.sh
+
 printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'Both building releases used above are synthetic fixtures, not county source data.'
+printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'

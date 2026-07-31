@@ -1,13 +1,16 @@
-Batch 009 local Linux verification
+Batch 010 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
 - Accepted ledger candidate build: PASS
 - Synthetic building release v1 import: PASS
+- Synthetic county-boundary grid calibration: PASS
+- Exact building-to-practical-cell indexing: PASS
+- Muted-cell review trigger generation: PASS
 - Synthetic building release v2 refresh: PASS
 - Release comparison and supersession validation: PASS
-- Batch 008 database-copy migration upgrade: PASS
+- Spatial refresh indexes only geometry-relevant changes for review: PASS
 - Candidate failure preserves accepted database: PASS
-- Database tests: 22 passed
+- Database tests: 29 passed
 - TrivialHTTP compilation: not performed and not required
-- Authoritative county building data: not bundled or harvested
+- Authoritative county boundary and building data: not bundled or harvested

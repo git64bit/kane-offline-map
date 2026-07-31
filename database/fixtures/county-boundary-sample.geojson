@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "name": "Kane Offline Map county boundary calibration fixture",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "fixture-county-boundary",
+      "properties": {
+        "name": "Synthetic county boundary calibration fixture"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-88.7000, 41.6000],
+          [-88.1000, 41.6000],
+          [-88.1000, 42.2000],
+          [-88.7000, 42.2000],
+          [-88.7000, 41.6000]
+        ]]
+      }
+    }
+  ]
+}

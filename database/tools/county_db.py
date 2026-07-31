@@ -3,10 +3,8 @@
 
 from __future__ import annotations
 
-import argparse
 import datetime as dt
 import hashlib
-import json
 import os
 import sqlite3
 import sys
@@ -21,10 +19,11 @@ if str(TOOLS_DIR) not in sys.path:
 import county_buildings
 import county_building_refresh
 import county_ledger
+import county_spatial
 
 APP_ID = 0x47504B47
-USER_VERSION = 10500
-TOOL_VERSION = "batch-009.0"
+USER_VERSION = 10600
+TOOL_VERSION = "batch-010.0"
 REQUIRED_TABLES = {
     "schema_migration",
     "gpkg_spatial_ref_sys",
@@ -47,6 +46,8 @@ REQUIRED_TABLES = {
     "source_building",
     "building_release_comparison",
     "building_feature_change",
+    "classification_grid_calibration",
+    "building_cell_relation",
 }
 
 
@@ -263,6 +264,7 @@ def validate_database(path: Path) -> list[str]:
             errors.extend(validate_migrations(connection))
             errors.extend(county_ledger.classification_errors(connection, require_accepted=False))
             errors.extend(county_building_refresh.building_errors(connection, require_accepted=False))
+            errors.extend(county_spatial.spatial_errors(connection, require_calibrated=False))
 
         srs_ids = {
             row[0] for row in connection.execute(
@@ -316,6 +318,20 @@ def validate_building_database(path: Path) -> list[str]:
     return errors
 
 
+def validate_spatial_database(path: Path) -> list[str]:
+    errors = validate_building_database(path)
+    if errors or not path.is_file():
+        return errors
+    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        errors.extend(county_spatial.spatial_errors(connection, require_calibrated=True))
+    except sqlite3.Error as exc:
+        errors.append(f"Spatial validation error: {exc}")
+    finally:
+        connection.close()
+    return errors
+
+
 def database_info(path: Path) -> dict[str, object]:
     errors = validate_database(path)
     if errors:
@@ -354,141 +370,13 @@ def database_info(path: Path) -> dict[str, object]:
             ],
             **county_ledger.ledger_info(path),
             **county_building_refresh.building_info(path),
+            **county_spatial.spatial_info(path),
         }
     finally:
         connection.close()
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    init_parser = subparsers.add_parser("init", help="Create an empty candidate GeoPackage.")
-    init_parser.add_argument("--output", type=Path, required=True)
-    init_parser.add_argument("--force", action="store_true")
-
-    build_parser = subparsers.add_parser(
-        "build-ledger", help="Build a candidate GeoPackage with the accepted field ledger."
-    )
-    build_parser.add_argument("--archive", type=Path, required=True)
-    build_parser.add_argument("--output", type=Path, required=True)
-    build_parser.add_argument("--release-key")
-    build_parser.add_argument("--force", action="store_true")
-
-    buildings_parser = subparsers.add_parser(
-        "build-buildings",
-        help="Build a candidate with the accepted ledger and one building GeoJSON release.",
-    )
-    buildings_parser.add_argument("--archive", type=Path, required=True)
-    buildings_parser.add_argument("--geojson", type=Path, required=True)
-    buildings_parser.add_argument("--output", type=Path, required=True)
-    buildings_parser.add_argument("--ledger-release-key")
-    buildings_parser.add_argument("--release-key")
-    buildings_parser.add_argument("--source-uri")
-    buildings_parser.add_argument("--published-at")
-    buildings_parser.add_argument("--id-property")
-    buildings_parser.add_argument("--force", action="store_true")
-
-    refresh_parser = subparsers.add_parser(
-        "refresh-buildings",
-        help="Safely compare and promote a new building release in an accepted database.",
-    )
-    refresh_parser.add_argument("database", type=Path)
-    refresh_parser.add_argument("--geojson", type=Path, required=True)
-    refresh_parser.add_argument("--release-key")
-    refresh_parser.add_argument("--source-uri")
-    refresh_parser.add_argument("--published-at")
-    refresh_parser.add_argument("--id-property")
-
-    import_parser = subparsers.add_parser(
-        "import-ledger", help="Import the completed field ledger into an existing candidate."
-    )
-    import_parser.add_argument("database", type=Path)
-    import_parser.add_argument("--archive", type=Path, required=True)
-    import_parser.add_argument("--release-key")
-
-    validate_parser = subparsers.add_parser("validate", help="Validate a candidate GeoPackage.")
-    validate_parser.add_argument("database", type=Path)
-
-    validate_ledger_parser = subparsers.add_parser(
-        "validate-ledger", help="Require and validate one accepted classification release."
-    )
-    validate_ledger_parser.add_argument("database", type=Path)
-
-    validate_buildings_parser = subparsers.add_parser(
-        "validate-buildings", help="Require and validate one accepted building release."
-    )
-    validate_buildings_parser.add_argument("database", type=Path)
-
-    info_parser = subparsers.add_parser("info", help="Print database metadata as JSON.")
-    info_parser.add_argument("database", type=Path)
-    return parser
-
-
-def print_validation(errors: list[str], path: Path, label: str) -> int:
-    if errors:
-        print("INVALID", file=sys.stderr)
-        for error in errors:
-            print(f"- {error}", file=sys.stderr)
-        return 1
-    print(f"VALID {label}: {path}")
-    return 0
-
-
-def main() -> int:
-    args = build_parser().parse_args()
-    try:
-        if args.command == "init":
-            initialize_database(args.output, args.force)
-            print(json.dumps(database_info(args.output), indent=2))
-            return 0
-        if args.command == "build-ledger":
-            info = build_ledger_database(
-                args.output, args.archive, args.force, args.release_key
-            )
-            print(json.dumps(info, indent=2))
-            return 0
-        if args.command == "build-buildings":
-            info = build_building_database(
-                args.output, args.archive, args.geojson, args.force,
-                args.ledger_release_key, args.release_key, args.source_uri,
-                args.published_at, args.id_property,
-            )
-            print(json.dumps(info, indent=2))
-            return 0
-        if args.command == "refresh-buildings":
-            info = county_building_refresh.refresh_building_database(
-                args.database, args.geojson, args.release_key, args.source_uri,
-                args.published_at, args.id_property,
-            )
-            print(json.dumps(info, indent=2))
-            return 0
-        if args.command == "import-ledger":
-            errors = validate_database(args.database)
-            if errors:
-                raise RuntimeError("Target database is invalid:\n- " + "\n- ".join(errors))
-            county_ledger.import_ledger(args.database, args.archive, args.release_key)
-            print(json.dumps(database_info(args.database), indent=2))
-            return 0
-        if args.command == "validate":
-            return print_validation(validate_database(args.database), args.database, "database")
-        if args.command == "validate-ledger":
-            return print_validation(
-                validate_ledger_database(args.database), args.database, "classification ledger"
-            )
-        if args.command == "validate-buildings":
-            return print_validation(
-                validate_building_database(args.database), args.database, "building release"
-            )
-        if args.command == "info":
-            info = database_info(args.database)
-            print(json.dumps(info, indent=2))
-            return 0 if info.get("valid") else 1
-    except (OSError, RuntimeError, sqlite3.Error, UnicodeError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 1
-    return 2
-
-
 if __name__ == "__main__":
+    from county_cli import main
+
     raise SystemExit(main())

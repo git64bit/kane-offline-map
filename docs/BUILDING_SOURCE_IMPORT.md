@@ -81,3 +81,9 @@ The named output is replaced only after complete validation succeeds.
 `database/fixtures/buildings-sample.geojson` is a synthetic three-feature test fixture. It is not Kane County source data and must never be represented as an authoritative release.
 
 `verify-linux.sh` imports the first fixture and refreshes it with `buildings-refresh-v2.geojson` solely to exercise the production import, comparison, supersession, and validation paths. Neither fixture is authoritative.
+
+## Practical-cell spatial index
+
+After the accepted classification is calibrated from the same county boundary used by the browser, every building release can be mapped to the 512 × 512 practical grid. The database stores exact Polygon/rectangle or MultiPolygon/rectangle intersections in `building_cell_relation`; bounding boxes are used only to limit candidate cells. Polygon holes are respected.
+
+The initial calibrated release may create review rows for any building that intersects a muted or undiscovered cell. On refresh, only added, geometry-changed, and combined geometry/attribute changes can create new review rows. Removed, unchanged, and attribute-only changes do not request a classification change.

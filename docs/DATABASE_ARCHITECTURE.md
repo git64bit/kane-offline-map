@@ -31,7 +31,7 @@ Records county identity, schema migrations, source agencies, datasets, harvest r
 
 ### Classification
 
-Records immutable Kane Offline Map releases, sector source hashes, normalized practical-cell classifications, and review requests caused by later development.
+Records immutable Kane Offline Map releases, sector source hashes, normalized practical-cell classifications, and review requests caused by later development. Batch 010 creates review rows only for added or spatially changed buildings that intersect muted or undiscovered cells; attribute-only changes do not alter spatial classification.
 
 Batch 006 imports the completed field ledger as the first accepted classification release.
 
@@ -41,7 +41,9 @@ Batch 008 adds `source_building` as the first native GeoPackage feature table. E
 
 ### Derived data
 
-Future migrations will add feature-to-cell indexes, building clusters, road graphs, summaries, and application exports.
+Batch 010 adds `classification_grid_calibration`, the `classification_cell_spatial` SQL view, and `building_cell_relation`. Calibration reproduces the browser's exact fitted projection from the authoritative county-boundary extent. The view exposes all 262,144 practical-cell rectangles in EPSG:4326 without duplicating the classification table.
+
+Each immutable building row is related to every practical cell its Polygon or MultiPolygon geometry actually intersects. The relation is release-specific through `source_building_id` and classification-release-specific through the grid key. Later migrations will add building clusters, road graphs, summaries, and application exports.
 
 ### Change history
 

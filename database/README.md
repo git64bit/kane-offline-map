@@ -2,7 +2,7 @@
 
 This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
-The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history.
+The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers.
 
 ## Development environment
 
@@ -58,6 +58,22 @@ bash database/build-building-database.sh database/fixtures/buildings-sample.geoj
 
 The fixture is not authoritative county data. See `docs/BUILDING_SOURCE_IMPORT.md`.
 
+
+## Calibrate the practical-cell spatial grid
+
+The completed classification grid must be calibrated from the same `county_boundary.json` used by the browser:
+
+```sh
+bash database/calibrate-spatial-database.sh /path/to/county_boundary.json
+bash database/validate-spatial-database.sh
+```
+
+Calibration reproduces the browser's 1400 × 900 fitted projection, including its 35-unit padding and six-column reference grid. The accepted 512 × 512 practical grid is exposed through the SQL view `classification_cell_spatial` in EPSG:4326. Building Polygon and MultiPolygon geometry is intersected exactly against those cell rectangles.
+
+The first calibration indexes the current accepted building release. Later building refreshes automatically index the new accepted release. Added, geometry-changed, and fully modified buildings that intersect muted or undiscovered cells create open rows in `classification_review`; unchanged and attribute-only changes do not.
+
+Calibration and indexing use a temporary candidate database. A failed or conflicting calibration leaves the accepted database unchanged.
+
 ## Refresh the accepted building release
 
 After an accepted building database exists:
@@ -98,6 +114,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py build-ledger \
   --archive database/input/sectors.zip \
   --output project-data/database/kane-county-build.gpkg \
   --force
+
+PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py calibrate-grid \
+  project-data/database/kane-county-build.gpkg \
+  --boundary /path/to/county_boundary.json
 
 PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py refresh-buildings \
   project-data/database/kane-county-build.gpkg \

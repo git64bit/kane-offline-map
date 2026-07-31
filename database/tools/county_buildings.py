@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 import county_building_refresh
+import county_spatial
 
 SRS_ID = 4326
 AGENCY_KEY = "kane-county-gis"
@@ -289,7 +290,7 @@ def import_buildings(
                     dataset_id, previous_release_id, started_at, status, tool_version
                 ) VALUES (?, ?, ?, 'started', ?)
                 """,
-                (dataset_id, previous_release_id, now, "batch-009.0"),
+                (dataset_id, previous_release_id, now, "batch-010.0"),
             )
             run_id = run_cursor.lastrowid
             release_cursor = connection.execute(
@@ -373,6 +374,12 @@ def import_buildings(
                     """,
                     (now, previous_release_id),
                 )
+            spatial_result = county_spatial.index_building_release(
+                connection,
+                release_id,
+                county_spatial.review_source_ids_for_release(connection, release_id),
+                now,
+            )
             release_columns = {
                 row[1] for row in connection.execute("PRAGMA table_info(source_release)")
             }
@@ -401,6 +408,10 @@ def import_buildings(
                 """,
                 (now, release_id, run_id),
             )
-        return {"release_key": chosen_key, "feature_count": len(buildings)}
+        return {
+            "release_key": chosen_key,
+            "feature_count": len(buildings),
+            **spatial_result,
+        }
     finally:
         connection.close()

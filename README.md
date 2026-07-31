@@ -41,7 +41,7 @@ The browser keeps a compact local safety journal. When the included TrivialHTTP 
 project-data/sectors/
 ```
 
-The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow. Batch 008 adds the first native source-geometry table and a repeatable building GeoJSON import contract. Batch 009 adds candidate-safe building refresh, release comparison, and supersession without overwriting prior feature history.
+The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow. Batch 008 adds the first native source-geometry table and a repeatable building GeoJSON import contract. Batch 009 adds candidate-safe building refresh, release comparison, and supersession without overwriting prior feature history. Batch 010 calibrates the completed practical-cell grid from the same county boundary used by the browser, creates exact building-to-cell intersection rows, and opens review records when new or spatially changed buildings intersect muted cells.
 
 ## Development and delivery environment
 
@@ -67,9 +67,10 @@ This command:
 
 1. verifies tracked source checksums and the complete application tree;
 2. creates a candidate GeoPackage from the completed ledger and a synthetic first building release;
-3. refreshes that database with a synthetic second building release;
-4. validates the accepted release, superseded history, and comparison record; and
-5. runs the database test suite.
+3. calibrates the practical-cell grid from a synthetic county boundary;
+4. refreshes that database with a synthetic second building release;
+5. validates release history, exact building-cell intersections, and muted-cell review triggers; and
+6. runs the database test suite.
 
 It does not compile TrivialHTTP and does not require a C compiler.
 
@@ -104,8 +105,10 @@ trivialhttp/build/trivialhttp --root .
 bash database/build-ledger-database.sh
 bash database/validate-ledger-database.sh
 bash database/build-building-database.sh /path/to/buildings.geojson RELEASE_KEY
+bash database/calibrate-spatial-database.sh /path/to/county_boundary.json
 bash database/refresh-building-database.sh /path/to/new-buildings.geojson NEW_RELEASE_KEY
 bash database/validate-building-database.sh
+bash database/validate-spatial-database.sh
 bash database/run-tests.sh
 ```
 
