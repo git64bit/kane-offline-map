@@ -72,7 +72,16 @@ docs/HARVEST_ACCEPTANCE.md
 docs/REVIEW_EXPORT.md
 docs/REVIEW_BUNDLE.md
 docs/REVIEW_BROWSER.md
-data/reviews/README.txt'
+docs/PORTABLE_ARCHIVE.md
+data/reviews/README.txt
+deployment/build-portable-archive.sh
+deployment/tools/portable_archive.py
+deployment/README.md
+deployment/USB_DEPLOYMENT_README.txt
+deployment/START-URL.txt
+deployment/TRIVIALHTTP_RUNTIME_README.txt
+deployment/SECTOR_STORAGE_README.txt
+database/tests/test_portable_archive.py'
 
 printf '%s\n' 'Checking tracked source checksums...'
 sha256sum -c CHECKSUMS.sha256
@@ -127,6 +136,7 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, review-export, sector-bundle, and browser-review contracts were validated offline; no live source was contacted.'
+printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, review-export, sector-bundle, browser-review, and portable-archive contracts were validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'
+printf '%s\n' 'The portable archive builder was validated with synthetic prepared data; no final deployment ZIP was produced.'

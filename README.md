@@ -154,3 +154,15 @@ project-data/database/kane-county-build.gpkg
 ## Batch 004 behavior
 
 Opening an 8 × 8 practical grid changes only its still-undiscovered cells to Discovered/green. Existing muted/black cells remain muted. The grid is saved as one classification change group rather than 64 separate actions.
+
+## Portable application archive
+
+Batch 018 adds the deterministic portable-archive builder. It packages the browser runtime and a validated prepared-data directory into a separate `kane-offline-map/` application tree. Development sources, the external review bundle, and operating-system-specific TrivialHTTP runtime files are excluded.
+
+```sh
+bash deployment/build-portable-archive.sh \
+  /path/to/prepared-data \
+  /path/to/kane-offline-map.zip
+```
+
+The final USB archive is not produced until the repository can generate the authoritative prepared browser-data bundle.

@@ -1,4 +1,4 @@
-Batch 017 local Linux verification
+Batch 018 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
@@ -18,11 +18,16 @@ Batch 017 local Linux verification
 - Browser sector-file byte-length and SHA-256 verification: PASS
 - County, inspection, and practical-cell review overlays: PASS
 - Missing review bundle remains nonfatal: PASS
+- Deterministic portable ZIP construction: PASS
+- Portable manifest payload hashes and source identity: PASS
+- Review bundle and TrivialHTTP runtime exclusion: PASS
+- Existing archive overwrite refusal: PASS
+- Candidate-safe forced archive replacement: PASS
 - Existing export and bundle overwrite refusal: PASS
 - Authoritative database byte preservation: PASS
 - Candidate failure preserves accepted outputs: PASS
 - Source script 500-line cap: PASS
-- Database and browser-contract tests: 81 passed
+- Database, browser-contract, and packaging tests: 89 passed
 - Live ArcGIS network access: not performed and not required
 - TrivialHTTP compilation: not performed and not required
-- Authoritative county data, generated GeoPackages, and generated review outputs: not bundled
+- Authoritative county data, generated GeoPackages, generated review outputs, and final portable ZIP: not bundled
