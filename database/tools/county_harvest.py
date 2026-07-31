@@ -58,10 +58,10 @@ def chosen_published_at(manifest: dict[str, Any]) -> str:
     return parse_timestamp(value or manifest["harvested_at"], "published timestamp")
 
 
-def release_key(published_at: str, output_sha256: str) -> str:
+def release_key(dataset_key: str, published_at: str, output_sha256: str) -> str:
     moment = dt.datetime.fromisoformat(published_at.replace("Z", "+00:00"))
     date_key = moment.astimezone(dt.timezone.utc).strftime("%Y%m%d")
-    return f"kane-buildings-{date_key}-{output_sha256[:12]}"
+    return f"kane-{dataset_key}-{date_key}-{output_sha256[:12]}"
 
 
 def validate_features(
@@ -157,6 +157,11 @@ def validate_harvest(
 
     object_ids, stable_ids = validate_features(document, profile, manifest)
     require_equal(output_record.get("feature_count"), len(object_ids), "feature count")
+    expected_count = profile.get("expected_feature_count")
+    if expected_count is not None and len(object_ids) != expected_count:
+        raise RuntimeError(
+            f"Harvest output contains {len(object_ids)} features; expected {expected_count}."
+        )
 
     request = manifest.get("request")
     if not isinstance(request, dict):
@@ -180,7 +185,7 @@ def validate_harvest(
     return {
         "valid": True,
         "profile_key": profile["profile_key"],
-        "release_key": release_key(published_at, output_hash),
+        "release_key": release_key(profile["dataset_key"], published_at, output_hash),
         "source_uri": profile["layer_url"],
         "source_version": f"arcgis-profile-sha256:{profile_record['sha256']}",
         "profile_sha256": profile_record["sha256"],

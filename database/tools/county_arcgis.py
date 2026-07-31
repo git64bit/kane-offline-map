@@ -122,6 +122,11 @@ def profile_errors(profile: Any) -> list[str]:
     page_size = profile.get("page_size")
     if not isinstance(page_size, int) or isinstance(page_size, bool) or not 1 <= page_size <= 5000:
         errors.append("page_size must be an integer from 1 through 5000.")
+    expected_count = profile.get("expected_feature_count")
+    if expected_count is not None and (
+        not isinstance(expected_count, int) or isinstance(expected_count, bool) or expected_count < 1
+    ):
+        errors.append("expected_feature_count must be a positive integer when provided.")
     out_fields = profile.get("out_fields")
     if not isinstance(out_fields, list) or not out_fields:
         errors.append("out_fields must be a non-empty array.")
@@ -160,6 +165,7 @@ def profile_info(path: Path) -> dict[str, Any]:
         "object_id_field": profile["object_id_field"],
         "out_srs": profile["out_srs"],
         "page_size": profile["page_size"],
+        "expected_feature_count": profile.get("expected_feature_count"),
         "profile_sha256": sha256_bytes(raw),
     }
 
@@ -208,10 +214,10 @@ def chunks(values: list[int], size: int) -> Iterable[list[int]]:
 
 def stable_text(value: Any, label: str) -> str:
     if value is None or isinstance(value, bool):
-        raise RuntimeError(f"Building feature is missing stable {label}.")
+        raise RuntimeError(f"ArcGIS feature is missing stable {label}.")
     text = str(value).strip()
     if not text:
-        raise RuntimeError(f"Building feature is missing stable {label}.")
+        raise RuntimeError(f"ArcGIS feature is missing stable {label}.")
     return text
 
 
@@ -384,6 +390,11 @@ def harvest(
     object_ids = sorted(object_id(value, profile["object_id_field"]) for value in raw_ids)
     if len(set(object_ids)) != len(object_ids):
         raise RuntimeError("ArcGIS ID response contains duplicate object IDs.")
+    expected_count = profile.get("expected_feature_count")
+    if expected_count is not None and len(object_ids) != expected_count:
+        raise RuntimeError(
+            f"ArcGIS layer returned {len(object_ids)} features; expected {expected_count}."
+        )
     max_records = int(metadata["maxRecordCount"])
     page_size = min(profile["page_size"], max_records)
     features: list[dict[str, Any]] = []

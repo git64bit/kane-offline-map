@@ -1,0 +1,18 @@
+{
+  "profile_schema": 1,
+  "profile_key": "kane-county-boundary",
+  "agency_key": "kane-county-gis",
+  "dataset_key": "county-boundary",
+  "layer_url": "https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/County_Boundary/FeatureServer/0",
+  "where": "1=1",
+  "object_id_field": "FID",
+  "id_property": "FID",
+  "expected_geometry_type": "esriGeometryPolygon",
+  "expected_feature_count": 1,
+  "out_srs": 4326,
+  "page_size": 2000,
+  "out_fields": [
+    "FID"
+  ],
+  "copyright_text": "Kane County, GIS"
+}

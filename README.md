@@ -41,7 +41,7 @@ The browser keeps a compact local safety journal. When the included TrivialHTTP 
 project-data/sectors/
 ```
 
-The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow. Batch 008 adds the first native source-geometry table and a repeatable building GeoJSON import contract. Batch 009 adds candidate-safe building refresh, release comparison, and supersession without overwriting prior feature history. Batch 010 calibrates the completed practical-cell grid from the same county boundary used by the browser, creates exact building-to-cell intersection rows, and opens review records when new or spatially changed buildings intersect muted cells. Batch 011 adds a deterministic ArcGIS REST harvest contract for the public Kane County GIS building-footprint layer, using `FPId` as the stable source identity and producing a hashed provenance manifest beside every harvested GeoJSON release. Batch 012 validates the GeoJSON/manifest pair as one immutable source release, derives SQL provenance from that pair, and adds candidate-safe first-build and later-refresh commands for authoritative harvests.
+The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow. Batch 008 adds the first native source-geometry table and a repeatable building GeoJSON import contract. Batch 009 adds candidate-safe building refresh, release comparison, and supersession without overwriting prior feature history. Batch 010 calibrates the completed practical-cell grid from the same county boundary used by the browser, creates exact building-to-cell intersection rows, and opens review records when new or spatially changed buildings intersect muted cells. Batch 011 adds a deterministic ArcGIS REST harvest contract for the public Kane County GIS building-footprint layer, using `FPId` as the stable source identity and producing a hashed provenance manifest beside every harvested GeoJSON release. Batch 012 validates the building GeoJSON/manifest pair as one immutable source release, derives SQL provenance from that pair, and adds candidate-safe first-build and later-refresh commands. Batch 013 adds a separate one-feature ArcGIS harvest contract for the official county boundary so grid calibration can use an independently hashed authoritative source instead of a synthetic fixture.
 
 ## Development and delivery environment
 
@@ -66,7 +66,7 @@ bash verify-linux.sh
 This command:
 
 1. verifies tracked source checksums and the complete application tree;
-2. validates the official Kane County building source profile without network access;
+2. validates the official Kane County building and county-boundary source profiles without network access;
 3. validates synthetic ArcGIS GeoJSON/manifest pairs and their SQL provenance;
 4. creates a candidate GeoPackage from the completed ledger and a synthetic first building release;
 5. calibrates the practical-cell grid from a synthetic county boundary;
@@ -107,6 +107,8 @@ trivialhttp/build/trivialhttp --root .
 bash database/validate-source-profile.sh
 bash database/harvest-kane-buildings.sh /path/to/kane-buildings.geojson
 bash database/validate-kane-building-harvest.sh /path/to/kane-buildings.geojson
+bash database/harvest-kane-boundary.sh /path/to/kane-boundary.geojson
+bash database/validate-kane-boundary-harvest.sh /path/to/kane-boundary.geojson
 bash database/build-kane-harvest-database.sh /path/to/kane-buildings.geojson /path/to/kane-county.gpkg
 bash database/refresh-kane-harvest-database.sh /path/to/kane-county.gpkg /path/to/new-kane-buildings.geojson
 bash database/build-ledger-database.sh

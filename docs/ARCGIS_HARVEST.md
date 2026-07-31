@@ -1,117 +1,80 @@
-# Authoritative ArcGIS Building Harvest
+# Authoritative ArcGIS Harvest
 
 ## Purpose
 
-Batch 011 adds a repeatable acquisition boundary between the public Kane County GIS service and the local, offline SQL workflow. Harvesting is a separate operation from importing. A successful harvest creates an immutable GeoJSON release plus a provenance manifest. Batch 012 requires the pair to pass a separate offline acceptance contract before either file can become SQL provenance.
+The ArcGIS acquisition layer creates immutable GeoJSON snapshots before any source can enter the offline SQL workflow. Each successful harvest produces canonical GeoJSON plus a hashed provenance manifest. Offline validation treats the pair as one source release.
 
-The configured source is the Kane County GIS building-footprint FeatureServer layer:
-
-```text
-https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/KaneCo_IL_BuildingFootprints/FeatureServer/0
-```
-
-The source profile is tracked at:
+Tracked source profiles:
 
 ```text
 database/sources/kane-county-buildings.json
+database/sources/kane-county-boundary.json
+```
+
+Configured official layers:
+
+```text
+https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/KaneCo_IL_BuildingFootprints/FeatureServer/0
+https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/County_Boundary/FeatureServer/0
 ```
 
 ## Identity policy
 
-The ArcGIS layer advertises `OBJECTID` as its system-maintained object ID and does not advertise a GlobalID. System-maintained object IDs are used only to retrieve one complete, ordered snapshot. Long-term feature identity uses the county field `FPId`.
+Building snapshots use the system-maintained `OBJECTID` only for complete ordered retrieval. The county `FPId` field is required as the stable release-to-release building identity.
 
-The harvester rejects the complete candidate when any feature has:
+The county-boundary profile requires exactly one polygon feature. Its `FID` is sufficient as the snapshot identity because the source contract represents one county-wide geometry, not a collection of independently tracked features.
 
-- a missing or empty `FPId`;
-- a duplicate `FPId`;
-- an invalid or duplicate `OBJECTID`;
-- an unsupported geometry type; or
-- an object-ID mismatch between the requested page and returned page.
-
-It does not silently replace `FPId` with `OBJECTID`. A live source that violates the identity contract must be examined before it can enter the refresh history.
+A candidate is rejected for missing or duplicate identities, unsupported geometry, an object-ID mismatch, a schema mismatch, or a feature count that violates the tracked profile.
 
 ## Retrieval method
 
-The harvester uses the ArcGIS REST query operation in two stages:
+The standard-library harvester:
 
-1. `returnIdsOnly=true` retrieves and sorts the complete object-ID set.
-2. The IDs are divided into bounded groups and queried as GeoJSON with `outSR=4326`.
+1. requests current layer metadata;
+2. retrieves and sorts the complete object-ID inventory with `returnIdsOnly=true`;
+3. verifies any tracked expected feature count;
+4. requests exact bounded ID groups as GeoJSON with `outSR=4326`; and
+5. writes canonical GeoJSON and a canonical manifest through candidate files.
 
-Using explicit object-ID groups avoids depending on changing page offsets. Every returned group must exactly match the requested object IDs. The profile page size is also capped by the layer's current `maxRecordCount` metadata.
+Explicit object-ID groups avoid dependence on offset pagination. Every returned page must exactly match the requested IDs.
 
-The output is canonical UTF-8 GeoJSON. Features are ordered by `OBJECTID`, and each GeoJSON `feature.id` is set to the stable `FPId` string. This lets the existing building importer use the stable identity without rewriting source attributes.
+## Commands
 
-## Harvest command
-
-The harvest is intentionally not part of `verify-linux.sh`, because source access may be unavailable and verification must remain deterministic.
-
-From the repository root:
-
-```sh
-bash database/harvest-kane-buildings.sh /absolute/path/kane-buildings.geojson
-```
-
-To deliberately replace an existing candidate pair:
-
-```sh
-bash database/harvest-kane-buildings.sh /absolute/path/kane-buildings.geojson --force
-```
-
-The command requires network access only during the harvest. It uses Python's standard library and does not require GDAL, a compiler, or third-party Python packages.
-
-## Produced files
-
-For an output named:
-
-```text
-kane-buildings.geojson
-```
-
-the harvester also creates:
-
-```text
-kane-buildings.geojson.manifest.json
-```
-
-The manifest records:
-
-- the source-profile hash;
-- complete ArcGIS layer metadata and its hash;
-- source edit timestamps when advertised;
-- query filter and output fields;
-- complete object-ID set hash;
-- page and feature counts;
-- output byte length and SHA-256; and
-- harvest timestamp.
-
-The output and manifest are built as temporary candidates. Network, schema, identity, and geometry failures occur before promotion and leave an existing output pair unchanged.
-
-## Offline profile validation
-
-The tracked profile can be validated without contacting ArcGIS:
+Validate both tracked profiles without network access:
 
 ```sh
 bash database/validate-source-profile.sh
 ```
 
-This confirms the repository contract only. The live harvest separately verifies current layer metadata before downloading features, so incompatible source-schema changes are rejected rather than accepted silently.
+Harvest buildings:
 
-## Acceptance after harvest
+```sh
+bash database/harvest-kane-buildings.sh /absolute/path/kane-buildings.geojson
+```
 
-After inspecting the two output files, validate them together:
+Harvest the county boundary:
+
+```sh
+bash database/harvest-kane-boundary.sh /absolute/path/kane-boundary.geojson
+```
+
+Add `--force` only when deliberately replacing an existing output pair.
+
+Validate completed pairs offline:
 
 ```sh
 bash database/validate-kane-building-harvest.sh /absolute/path/kane-buildings.geojson
+bash database/validate-kane-boundary-harvest.sh /absolute/path/kane-boundary.geojson
 ```
 
-Then build the first authoritative database or refresh a later one using the commands in `docs/HARVEST_ACCEPTANCE.md`. The acceptance tools derive release metadata from the manifest; they do not ask the operator to retype source URI, publication time, stable-ID field, or release key.
+The commands use Python's standard library. No compiler, GDAL installation, or third-party Python package is required.
+
+## Manifest contents
+
+Each sidecar records the source-profile hash, complete layer metadata and hash, source edit timestamps, query contract, object-ID inventory hash, page and feature counts, output byte length and SHA-256, and harvest timestamp.
+
+The output and manifest are promoted only after the complete candidate succeeds. Network, schema, identity, geometry, and count failures leave an existing pair unchanged.
 
 ## Deliberate limits
 
-Batch 011 does not:
-
-- bundle a live Kane County building harvest;
-- import a harvested release into the GeoPackage automatically;
-- infer an alternate stable identity when `FPId` is missing;
-- harvest the county boundary, roads, water, parcels, or addresses; or
-- add network behavior to TrivialHTTP or the browser application.
+Batch 013 does not bundle live county data or calibrate the accepted database. The next bounded step will connect a validated boundary pair to candidate-safe grid calibration and preserve its provenance in SQL.

@@ -24,8 +24,11 @@ database/fixtures/buildings-sample.geojson
 database/fixtures/buildings-refresh-v2.geojson
 database/fixtures/county-boundary-sample.geojson
 database/sources/kane-county-buildings.json
+database/sources/kane-county-boundary.json
 database/harvest-kane-buildings.sh
+database/harvest-kane-boundary.sh
 database/validate-kane-building-harvest.sh
+database/validate-kane-boundary-harvest.sh
 database/build-kane-harvest-database.sh
 database/refresh-kane-harvest-database.sh
 database/validate-source-profile.sh
@@ -49,6 +52,7 @@ database/tests/test_buildings.py
 database/tests/test_spatial.py
 database/tests/test_arcgis.py
 database/tests/test_harvest_acceptance.py
+database/tests/test_boundary_harvest.py
 docs/ARCGIS_HARVEST.md
 docs/HARVEST_ACCEPTANCE.md'
 
@@ -75,7 +79,7 @@ if sys.version_info < (3, 9):
 print(f"Python {sys.version.split()[0]}")
 PY
 
-printf '%s\n' 'Validating official Kane County ArcGIS source profile offline...'
+printf '%s\n' 'Validating official Kane County ArcGIS source profiles offline...'
 bash database/validate-source-profile.sh
 
 printf '%s\n' 'Building ledger and fixture building candidate...'
@@ -105,6 +109,6 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The official ArcGIS profile and harvest-acceptance contract were validated offline; no live source was contacted.'
+printf '%s\n' 'The official building and boundary ArcGIS profiles and harvest-acceptance contracts were validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'

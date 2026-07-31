@@ -11,7 +11,7 @@ kane-buildings.geojson
 kane-buildings.geojson.manifest.json
 ```
 
-Batch 012 adds the acceptance boundary between those files and the canonical GeoPackage. The database tools do not trust operator-entered release metadata for an ArcGIS harvest. They derive provenance only after the GeoJSON and manifest pair passes offline validation.
+Batch 012 adds the acceptance boundary between those files and the canonical GeoPackage. The database tools do not trust operator-entered release metadata for an ArcGIS harvest. They derive provenance only after the GeoJSON and manifest pair passes offline validation. Batch 013 applies the same immutable-pair validation to the county-boundary harvest, but SQL preservation of boundary provenance is intentionally deferred to the next bounded batch.
 
 ## Validation contract
 

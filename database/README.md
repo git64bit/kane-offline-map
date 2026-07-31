@@ -2,7 +2,7 @@
 
 This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
-The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered. Batch 012 validates that pair as one immutable source release and derives the SQL release identity and provenance without manual metadata entry.
+The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered. Batch 012 validates that pair as one immutable source release and derives the SQL release identity and provenance without manual metadata entry. Batch 013 adds the corresponding deterministic harvest and offline acceptance contract for the official county-boundary layer.
 
 ## Development environment
 
@@ -18,7 +18,7 @@ Python supplies the SQLite engine, GeoPackage geometry encoder, migration upgrad
 
 Shell scripts are invoked through `bash`; executable permission bits are not required.
 
-## Validate and harvest the official building source
+## Validate and harvest official county sources
 
 Validate the tracked source profile without network access:
 
@@ -26,18 +26,20 @@ Validate the tracked source profile without network access:
 bash database/validate-source-profile.sh
 ```
 
-Create one canonical GeoJSON release and its `.manifest.json` provenance sidecar:
+Create canonical GeoJSON releases and their `.manifest.json` provenance sidecars:
 
 ```sh
 bash database/harvest-kane-buildings.sh /path/to/kane-buildings.geojson
+bash database/harvest-kane-boundary.sh /path/to/kane-boundary.geojson
 ```
 
-The harvester first retrieves the complete ArcGIS object-ID set, then queries exact bounded ID groups as EPSG:4326 GeoJSON. `OBJECTID` controls snapshot retrieval; the county `FPId` field is required as the stable release-to-release feature identity. Missing or duplicate `FPId` values reject the whole candidate. The live harvest is deliberately not part of `verify-linux.sh`. See `docs/ARCGIS_HARVEST.md`.
+The harvester first retrieves the complete ArcGIS object-ID set, then queries exact bounded ID groups as EPSG:4326 GeoJSON. Building snapshots use `FPId` as the stable feature identity. The boundary profile requires exactly one polygon feature and uses its `FID` as the snapshot identity. Missing, duplicate, or unexpected identities reject the whole candidate. Live harvests are deliberately not part of `verify-linux.sh`. See `docs/ARCGIS_HARVEST.md`.
 
 Validate a completed harvest pair without changing a database:
 
 ```sh
 bash database/validate-kane-building-harvest.sh /path/to/kane-buildings.geojson
+bash database/validate-kane-boundary-harvest.sh /path/to/kane-boundary.geojson
 ```
 
 Build the first accepted database directly from the completed ledger and a validated official harvest:
