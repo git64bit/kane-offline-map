@@ -2,7 +2,7 @@
 
 This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
-The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered. Batch 012 validates that pair as one immutable source release and derives the SQL release identity and provenance without manual metadata entry. Batch 013 adds the corresponding deterministic harvest and offline pair-validation contract for the official county-boundary layer. Batch 014 stores that pair as an immutable GeoPackage release, links it to grid calibration, and constructs the authoritative building-cell index through candidate promotion.
+The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered. Batch 012 validates that pair as one immutable source release and derives the SQL release identity and provenance without manual metadata entry. Batch 013 adds the corresponding deterministic harvest and offline pair-validation contract for the official county-boundary layer. Batch 014 stores that pair as an immutable GeoPackage release, links it to grid calibration, and constructs the authoritative building-cell index through candidate promotion. Batch 015 provides a read-only canonical GeoJSON export of open building-triggered review cells.
 
 ## Development environment
 
@@ -140,6 +140,18 @@ bash database/validate-building-database.sh
 The refresh command copies the accepted GeoPackage to a temporary candidate, applies pending migrations to that copy, imports the new source release, compares stable source IDs, validates the complete database, and atomically replaces the accepted path only after success. The previous building release and all of its feature rows remain in the database with `superseded` status.
 
 The comparison records added, removed, unchanged, geometry-only, attribute-only, and combined modifications. A failed import or validation leaves the accepted file byte-for-byte unchanged.
+
+## Export open review cells
+
+After authoritative boundary acceptance and spatial indexing:
+
+```sh
+bash database/export-open-reviews.sh \
+  /path/to/kane-county.gpkg \
+  /path/to/kane-open-review-cells.geojson
+```
+
+The exporter validates the authoritative database, opens it read-only, groups open building-triggered reviews by practical cell, and writes canonical EPSG:4326 GeoJSON through a validated temporary candidate. It does not modify reviews or any source release. See `docs/REVIEW_EXPORT.md`.
 
 ## Validate the imported ledger
 

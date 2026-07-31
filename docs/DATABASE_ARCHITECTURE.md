@@ -43,7 +43,7 @@ Batch 008 adds `source_building` as the first native GeoPackage feature table. E
 
 Batch 010 adds `classification_grid_calibration`, the `classification_cell_spatial` SQL view, and `building_cell_relation`. Calibration reproduces the browser's exact fitted projection from the authoritative county-boundary extent. Batch 014 links that calibration row to the accepted boundary release and sets the county canonical SRS to EPSG:4326. The view exposes all 262,144 practical-cell rectangles in EPSG:4326 without duplicating the classification table.
 
-Each immutable building row is related to every practical cell its Polygon or MultiPolygon geometry actually intersects. The relation is release-specific through `source_building_id` and classification-release-specific through the grid key. Later migrations will add building clusters, road graphs, summaries, and application exports.
+Each immutable building row is related to every practical cell its Polygon or MultiPolygon geometry actually intersects. The relation is release-specific through `source_building_id` and classification-release-specific through the grid key. Batch 015 emits the current open building-triggered review cells as a read-only canonical GeoJSON application export. Later migrations will add building clusters, road graphs, summaries, and additional application exports.
 
 ### Change history
 

@@ -15,6 +15,7 @@ import county_building_refresh
 import county_harvest
 import county_db
 import county_ledger
+import county_review_export
 import county_spatial
 
 
@@ -117,6 +118,14 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--manifest", type=Path)
 
     command = commands.add_parser(
+        "export-open-reviews",
+        help="Export open building-triggered review cells as canonical GeoJSON.",
+    )
+    command.add_argument("database", type=Path)
+    command.add_argument("--output", type=Path, required=True)
+    command.add_argument("--force", action="store_true")
+
+    command = commands.add_parser(
         "import-ledger", help="Import the completed field ledger into an existing candidate."
     )
     command.add_argument("database", type=Path)
@@ -217,6 +226,10 @@ def main() -> int:
         elif args.command == "accept-harvested-boundary":
             info = county_boundary.accept_harvested_boundary(
                 args.database, args.profile, args.geojson, args.manifest
+            )
+        elif args.command == "export-open-reviews":
+            info = county_review_export.export_open_reviews(
+                args.database, args.output, args.force
             )
         elif args.command == "import-ledger":
             errors = county_db.validate_database(args.database)

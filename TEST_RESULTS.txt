@@ -1,4 +1,4 @@
-Batch 014 local Linux verification
+Batch 015 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
@@ -11,9 +11,13 @@ Batch 014 local Linux verification
 - Accepted ledger and building fixture candidate: PASS
 - Exact building-to-practical-cell indexing: PASS
 - Muted-cell review trigger generation: PASS
+- Read-only open-review GeoJSON export: PASS
+- Canonical export and summary validation: PASS
+- Existing export overwrite refusal: PASS
+- Authoritative database byte preservation: PASS
 - Candidate failure preserves the accepted database: PASS
 - Authoritative database validation: PASS
-- Database tests: 59 passed
+- Database tests: 66 passed
 - Live ArcGIS network access: not performed and not required
 - TrivialHTTP compilation: not performed and not required
-- Authoritative county data and generated GeoPackages: not bundled
+- Authoritative county data, generated GeoPackages, and generated review exports: not bundled

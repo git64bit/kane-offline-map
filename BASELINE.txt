@@ -1,7 +1,7 @@
 Repository: https://github.com/git64bit/kane-offline-map
 Branch: main
-Accepted base commit: 64dbb183df80e0ba8b5b7d89c7d675cc947d6383
-Accepted base batch: 013 correction
-Current delivery: Batch 014 Git format-patch
+Accepted base commit: 3450f8f8999f30c6cd8d2a1b13f0ebdbc61b556b
+Accepted base batch: 014
+Current delivery: Batch 015 Git format-patch
 Development platform: Linux only
 Windows status: final offline runtime target only
