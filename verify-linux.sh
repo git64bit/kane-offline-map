@@ -35,6 +35,7 @@ database/validate-source-profile.sh
 database/accept-kane-boundary.sh
 database/validate-authoritative-database.sh
 database/export-open-reviews.sh
+database/export-open-review-bundle.sh
 database/migrations/0005_source_buildings.sql
 database/migrations/0006_building_refresh.sql
 database/migrations/0007_spatial_cell_index.sql
@@ -52,6 +53,7 @@ database/tools/county_buildings.py
 database/tools/county_building_refresh.py
 database/tools/county_ledger.py
 database/tools/county_review_export.py
+database/tools/county_review_bundle.py
 database/tools/county_spatial.py
 database/tests/test_database.py
 database/tests/test_buildings.py
@@ -61,9 +63,11 @@ database/tests/test_harvest_acceptance.py
 database/tests/test_boundary_harvest.py
 database/tests/test_boundary_acceptance.py
 database/tests/test_review_export.py
+database/tests/test_review_bundle.py
 docs/ARCGIS_HARVEST.md
 docs/HARVEST_ACCEPTANCE.md
-docs/REVIEW_EXPORT.md'
+docs/REVIEW_EXPORT.md
+docs/REVIEW_BUNDLE.md'
 
 printf '%s\n' 'Checking tracked source checksums...'
 sha256sum -c CHECKSUMS.sha256
@@ -118,6 +122,6 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, and review-export contracts were validated offline; no live source was contacted.'
+printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, review-export, and sector-bundle contracts were validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'

@@ -1,4 +1,4 @@
-Batch 015 local Linux verification
+Batch 016 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
@@ -13,11 +13,13 @@ Batch 015 local Linux verification
 - Muted-cell review trigger generation: PASS
 - Read-only open-review GeoJSON export: PASS
 - Canonical export and summary validation: PASS
-- Existing export overwrite refusal: PASS
+- Deterministic 16-sector review bundle: PASS
+- Sector-file hash, count, ownership, and canonical validation: PASS
+- Existing export and bundle overwrite refusal: PASS
 - Authoritative database byte preservation: PASS
-- Candidate failure preserves the accepted database: PASS
+- Candidate failure preserves accepted outputs: PASS
 - Authoritative database validation: PASS
-- Database tests: 66 passed
+- Database tests: 73 passed
 - Live ArcGIS network access: not performed and not required
 - TrivialHTTP compilation: not performed and not required
-- Authoritative county data, generated GeoPackages, and generated review exports: not bundled
+- Authoritative county data, generated GeoPackages, and generated review outputs: not bundled

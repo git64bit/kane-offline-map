@@ -15,6 +15,7 @@ import county_building_refresh
 import county_harvest
 import county_db
 import county_ledger
+import county_review_bundle
 import county_review_export
 import county_spatial
 
@@ -120,6 +121,14 @@ def build_parser() -> argparse.ArgumentParser:
     command = commands.add_parser(
         "export-open-reviews",
         help="Export open building-triggered review cells as canonical GeoJSON.",
+    )
+    command.add_argument("database", type=Path)
+    command.add_argument("--output", type=Path, required=True)
+    command.add_argument("--force", action="store_true")
+
+    command = commands.add_parser(
+        "export-open-review-bundle",
+        help="Export open reviews as one canonical sectorized bundle.",
     )
     command.add_argument("database", type=Path)
     command.add_argument("--output", type=Path, required=True)
