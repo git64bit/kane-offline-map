@@ -23,7 +23,7 @@ import county_spatial
 
 APP_ID = 0x47504B47
 USER_VERSION = 10600
-TOOL_VERSION = "batch-010.0"
+TOOL_VERSION = "batch-012.0"
 REQUIRED_TABLES = {
     "schema_migration",
     "gpkg_spatial_ref_sys",
@@ -179,6 +179,9 @@ def build_building_database(
     source_uri: str | None,
     published_at: str | None,
     id_property: str | None,
+    harvested_at: str | None = None,
+    source_version: str | None = None,
+    manifest_file: Path | None = None,
 ) -> dict[str, object]:
     if output.exists() and not force:
         raise RuntimeError(f"Output already exists: {output}")
@@ -193,7 +196,15 @@ def build_building_database(
         initialize_database(temporary, force=False)
         county_ledger.import_ledger(temporary, archive, ledger_release_key)
         county_buildings.import_buildings(
-            temporary, geojson, building_release_key, source_uri, published_at, id_property
+            temporary,
+            geojson,
+            building_release_key,
+            source_uri,
+            published_at,
+            id_property,
+            harvested_at,
+            source_version,
+            manifest_file,
         )
         errors = validate_building_database(temporary)
         if errors:

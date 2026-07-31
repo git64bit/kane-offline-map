@@ -27,7 +27,7 @@ GeoPackage combines portable SQLite SQL storage with standards-based spatial tab
 
 ### Administration
 
-Records county identity, schema migrations, source agencies, datasets, harvest runs, source releases, and source files.
+Records county identity, schema migrations, source agencies, datasets, harvest runs, source releases, and source files. Batch 012 preserves an accepted ArcGIS GeoJSON and its manifest as two hashed source-file records and stores the source-profile hash as the release source version.
 
 ### Classification
 

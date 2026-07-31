@@ -1,19 +1,23 @@
-Batch 011 local Linux verification
+Batch 012 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
 - Official Kane County building source profile offline validation: PASS
-- ArcGIS layer metadata contract tests: PASS
-- Complete object-ID retrieval and bounded group paging tests: PASS
-- Deterministic GeoJSON and provenance-manifest generation: PASS
-- Missing and duplicate stable FPId rejection: PASS
-- Candidate failure preserves existing harvest pair: PASS
+- ArcGIS GeoJSON/manifest acceptance contract: PASS
+- Canonical output and manifest enforcement: PASS
+- Source profile and layer metadata hash validation: PASS
+- Complete object-ID inventory and stable FPId validation: PASS
+- Deterministic authoritative release-key derivation: PASS
+- Harvest and manifest SQL provenance preservation: PASS
+- First authoritative candidate-build command smoke test: PASS
+- Later authoritative release refresh and supersession: PASS
+- Invalid harvest pair preserves accepted database: PASS
 - Accepted ledger candidate build: PASS
 - Synthetic building releases v1 and v2: PASS
 - Synthetic county-boundary grid calibration: PASS
 - Exact building-to-practical-cell indexing: PASS
 - Muted-cell review trigger generation: PASS
-- Database tests: 38 passed
+- Database tests: 46 passed
 - Live ArcGIS network access: not performed and not required
 - TrivialHTTP compilation: not performed and not required
-- Authoritative county data: not bundled or harvested
+- Authoritative county data: not bundled, harvested, or imported

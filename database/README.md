@@ -2,7 +2,7 @@
 
 This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
-The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered.
+The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered. Batch 012 validates that pair as one immutable source release and derives the SQL release identity and provenance without manual metadata entry.
 
 ## Development environment
 
@@ -33,6 +33,30 @@ bash database/harvest-kane-buildings.sh /path/to/kane-buildings.geojson
 ```
 
 The harvester first retrieves the complete ArcGIS object-ID set, then queries exact bounded ID groups as EPSG:4326 GeoJSON. `OBJECTID` controls snapshot retrieval; the county `FPId` field is required as the stable release-to-release feature identity. Missing or duplicate `FPId` values reject the whole candidate. The live harvest is deliberately not part of `verify-linux.sh`. See `docs/ARCGIS_HARVEST.md`.
+
+Validate a completed harvest pair without changing a database:
+
+```sh
+bash database/validate-kane-building-harvest.sh /path/to/kane-buildings.geojson
+```
+
+Build the first accepted database directly from the completed ledger and a validated official harvest:
+
+```sh
+bash database/build-kane-harvest-database.sh \
+  /path/to/kane-buildings.geojson \
+  /path/to/kane-county.gpkg
+```
+
+Refresh a later accepted release:
+
+```sh
+bash database/refresh-kane-harvest-database.sh \
+  /path/to/kane-county.gpkg \
+  /path/to/new-kane-buildings.geojson
+```
+
+Both database commands validate the GeoJSON and `.manifest.json` pair before candidate construction. See `docs/HARVEST_ACCEPTANCE.md`.
 
 ## Build the completed ledger database
 

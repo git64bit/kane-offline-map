@@ -11,6 +11,7 @@ from pathlib import Path
 
 import county_arcgis
 import county_building_refresh
+import county_harvest
 import county_db
 import county_ledger
 import county_spatial
@@ -36,6 +37,34 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--output", type=Path, required=True)
     command.add_argument("--timeout", type=float, default=county_arcgis.DEFAULT_TIMEOUT)
     command.add_argument("--force", action="store_true")
+
+    command = commands.add_parser(
+        "validate-harvest", help="Validate an ArcGIS GeoJSON and manifest pair for SQL acceptance."
+    )
+    command.add_argument("--profile", type=Path, required=True)
+    command.add_argument("--geojson", type=Path, required=True)
+    command.add_argument("--manifest", type=Path)
+
+    command = commands.add_parser(
+        "build-harvested-buildings",
+        help="Build a candidate ledger database from one validated ArcGIS building harvest.",
+    )
+    command.add_argument("--archive", type=Path, required=True)
+    command.add_argument("--profile", type=Path, required=True)
+    command.add_argument("--geojson", type=Path, required=True)
+    command.add_argument("--manifest", type=Path)
+    command.add_argument("--output", type=Path, required=True)
+    command.add_argument("--ledger-release-key")
+    command.add_argument("--force", action="store_true")
+
+    command = commands.add_parser(
+        "refresh-harvested-buildings",
+        help="Safely refresh an accepted database from a validated ArcGIS building harvest.",
+    )
+    command.add_argument("database", type=Path)
+    command.add_argument("--profile", type=Path, required=True)
+    command.add_argument("--geojson", type=Path, required=True)
+    command.add_argument("--manifest", type=Path)
 
     command = commands.add_parser(
         "build-ledger", help="Build a candidate GeoPackage with the accepted field ledger."
@@ -118,6 +147,45 @@ def main() -> int:
             info = county_arcgis.harvest(
                 args.profile, args.output, args.force, args.timeout
             )
+        elif args.command == "validate-harvest":
+            info = county_harvest.validate_harvest(
+                args.profile, args.geojson, args.manifest
+            )
+        elif args.command == "build-harvested-buildings":
+            harvest = county_harvest.validate_harvest(
+                args.profile, args.geojson, args.manifest
+            )
+            info = county_db.build_building_database(
+                args.output,
+                args.archive,
+                args.geojson,
+                args.force,
+                args.ledger_release_key,
+                harvest["release_key"],
+                harvest["source_uri"],
+                harvest["published_at"],
+                harvest["id_property"],
+                harvest["harvested_at"],
+                harvest["source_version"],
+                Path(harvest["manifest"]),
+            )
+            info["accepted_harvest"] = harvest
+        elif args.command == "refresh-harvested-buildings":
+            harvest = county_harvest.validate_harvest(
+                args.profile, args.geojson, args.manifest
+            )
+            info = county_building_refresh.refresh_building_database(
+                args.database,
+                args.geojson,
+                harvest["release_key"],
+                harvest["source_uri"],
+                harvest["published_at"],
+                harvest["id_property"],
+                harvest["harvested_at"],
+                harvest["source_version"],
+                Path(harvest["manifest"]),
+            )
+            info["accepted_harvest"] = harvest
         elif args.command == "build-ledger":
             info = county_db.build_ledger_database(
                 args.output, args.archive, args.force, args.release_key

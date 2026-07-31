@@ -184,6 +184,9 @@ def refresh_building_database(
     source_uri: str | None,
     published_at: str | None,
     id_property: str | None,
+    harvested_at: str | None = None,
+    source_version: str | None = None,
+    manifest_file: Path | None = None,
 ) -> dict[str, object]:
     import county_buildings
     import county_db
@@ -200,7 +203,15 @@ def refresh_building_database(
         shutil.copy2(database, candidate)
         upgrade_candidate(candidate)
         county_buildings.import_buildings(
-            candidate, geojson, release_key, source_uri, published_at, id_property
+            candidate,
+            geojson,
+            release_key,
+            source_uri,
+            published_at,
+            id_property,
+            harvested_at,
+            source_version,
+            manifest_file,
         )
         errors = county_db.validate_building_database(candidate)
         if errors:
@@ -225,14 +236,40 @@ def geometry_blob_error(blob: bytes) -> str | None:
 
 def release_content_errors(connection: sqlite3.Connection, release_id: int, release_key: str) -> list[str]:
     errors: list[str] = []
-    release_hash = connection.execute(
-        "SELECT content_sha256 FROM source_release WHERE release_id = ?", (release_id,)
-    ).fetchone()[0]
+    release_hash, source_version = connection.execute(
+        "SELECT content_sha256, source_version FROM source_release WHERE release_id = ?",
+        (release_id,),
+    ).fetchone()
     source_files = connection.execute(
-        "SELECT sha256 FROM source_file WHERE release_id = ?", (release_id,)
+        """
+        SELECT relative_path, media_type, byte_length, sha256
+        FROM source_file WHERE release_id = ? ORDER BY source_file_id
+        """,
+        (release_id,),
     ).fetchall()
-    if source_files != [(release_hash,)]:
-        errors.append(f"Building release {release_key} source file hash is inconsistent.")
+    geojson_files = [row for row in source_files if row[1] == "application/geo+json"]
+    manifest_files = [row for row in source_files if row[1] == "application/json"]
+    supported_media = {"application/geo+json", "application/json"}
+    unsupported_files = [row for row in source_files if row[1] not in supported_media]
+    if len(geojson_files) != 1 or geojson_files[0][3] != release_hash:
+        errors.append(f"Building release {release_key} GeoJSON source file hash is inconsistent.")
+    if len(manifest_files) > 1:
+        errors.append(f"Building release {release_key} has multiple harvest manifests.")
+    arcgis_prefix = "arcgis-profile-sha256:"
+    is_arcgis_harvest = isinstance(source_version, str) and source_version.startswith(arcgis_prefix)
+    if is_arcgis_harvest and len(manifest_files) != 1:
+        errors.append(f"Building release {release_key} lacks its harvest manifest.")
+    if manifest_files and not is_arcgis_harvest:
+        errors.append(f"Building release {release_key} manifest lacks an ArcGIS profile version.")
+    if is_arcgis_harvest:
+        profile_hash = source_version[len(arcgis_prefix):]
+        if len(profile_hash) != 64 or any(char not in "0123456789abcdef" for char in profile_hash):
+            errors.append(f"Building release {release_key} ArcGIS profile hash is invalid.")
+    if unsupported_files:
+        errors.append(f"Building release {release_key} has unsupported source-file media types.")
+    for relative_path, _media_type, byte_length, file_hash in source_files:
+        if not relative_path or byte_length < 0 or len(file_hash) != 64:
+            errors.append(f"Building release {release_key} has invalid source-file metadata.")
     rows = connection.execute(
         """
         SELECT source_feature_id, geometry, geometry_sha256, attributes_json,

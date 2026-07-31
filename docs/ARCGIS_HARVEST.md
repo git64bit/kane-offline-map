@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Batch 011 adds a repeatable acquisition boundary between the public Kane County GIS service and the local, offline SQL workflow. Harvesting is a separate operation from importing. A successful harvest creates an immutable GeoJSON release plus a provenance manifest; later commands decide whether that release becomes an accepted database release.
+Batch 011 adds a repeatable acquisition boundary between the public Kane County GIS service and the local, offline SQL workflow. Harvesting is a separate operation from importing. A successful harvest creates an immutable GeoJSON release plus a provenance manifest. Batch 012 requires the pair to pass a separate offline acceptance contract before either file can become SQL provenance.
 
 The configured source is the Kane County GIS building-footprint FeatureServer layer:
 
@@ -95,6 +95,16 @@ bash database/validate-source-profile.sh
 ```
 
 This confirms the repository contract only. The live harvest separately verifies current layer metadata before downloading features, so incompatible source-schema changes are rejected rather than accepted silently.
+
+## Acceptance after harvest
+
+After inspecting the two output files, validate them together:
+
+```sh
+bash database/validate-kane-building-harvest.sh /absolute/path/kane-buildings.geojson
+```
+
+Then build the first authoritative database or refresh a later one using the commands in `docs/HARVEST_ACCEPTANCE.md`. The acceptance tools derive release metadata from the manifest; they do not ask the operator to retype source URI, publication time, stable-ID field, or release key.
 
 ## Deliberate limits
 

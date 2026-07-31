@@ -259,12 +259,17 @@ def import_buildings(
     source_uri: str | None,
     published_at: str | None,
     id_property: str | None,
+    harvested_at: str | None = None,
+    source_version: str | None = None,
+    manifest_file: Path | None = None,
 ) -> dict[str, Any]:
     raw, source_features = load_features(geojson)
     buildings = normalize_features(source_features, id_property)
     source_hash = sha256_bytes(raw)
     chosen_key = release_key or f"buildings-{source_hash[:12]}"
     now = utc_now()
+    source_harvested_at = harvested_at or now
+    manifest_raw = manifest_file.read_bytes() if manifest_file else None
     connection = sqlite3.connect(database)
     connection.execute("PRAGMA foreign_keys = ON")
     try:
@@ -290,7 +295,7 @@ def import_buildings(
                     dataset_id, previous_release_id, started_at, status, tool_version
                 ) VALUES (?, ?, ?, 'started', ?)
                 """,
-                (dataset_id, previous_release_id, now, "batch-010.0"),
+                (dataset_id, previous_release_id, now, "batch-012.0"),
             )
             run_id = run_cursor.lastrowid
             release_cursor = connection.execute(
@@ -303,9 +308,9 @@ def import_buildings(
                 (
                     dataset_id,
                     chosen_key,
-                    None,
+                    source_version,
                     published_at,
-                    now,
+                    source_harvested_at,
                     source_uri,
                     source_hash,
                     "Immutable building release import with refresh comparison when applicable.",
@@ -324,6 +329,22 @@ def import_buildings(
                 """,
                 (release_id, geojson.name, "application/geo+json", len(raw), source_hash, now),
             )
+            if manifest_file is not None and manifest_raw is not None:
+                connection.execute(
+                    """
+                    INSERT INTO source_file(
+                        release_id, relative_path, media_type, byte_length, sha256, preserved_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        release_id,
+                        manifest_file.name,
+                        "application/json",
+                        len(manifest_raw),
+                        sha256_bytes(manifest_raw),
+                        now,
+                    ),
+                )
             connection.executemany(
                 """
                 INSERT INTO source_building(
@@ -411,6 +432,9 @@ def import_buildings(
         return {
             "release_key": chosen_key,
             "feature_count": len(buildings),
+            "harvested_at": source_harvested_at,
+            "source_version": source_version,
+            "manifest_sha256": sha256_bytes(manifest_raw) if manifest_raw is not None else None,
             **spatial_result,
         }
     finally:
