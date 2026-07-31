@@ -14,7 +14,7 @@
 - Preserves accepted classification, building, boundary, calibration, and source-database identities.
 - Validates all cross-file identities, hashes, counts, feature ownership, and canonical serialization before promotion.
 - Preserves an existing accepted bundle unless explicit `--force` replacement succeeds.
-- Adds seven tests, increasing the suite from 66 to 73 tests.
+- Adds eight tests, increasing the suite from 66 to 74 tests.
 
 ## Exclusions
 
@@ -23,3 +23,9 @@
 - No review is accepted, dismissed, deferred, or otherwise mutated.
 - No authoritative GeoPackage row or source release is changed.
 - No live county data, generated GeoPackage, or generated review bundle is committed.
+
+## Corrective follow-up
+
+- Adds the missing `county_cli.py` dispatch for `export-open-review-bundle`.
+- Adds an end-to-end subprocess test that requires the public shell command to emit valid JSON and create a validated bundle.
+- The original command previously parsed successfully but returned exit status 2 without output because no execution branch handled it.

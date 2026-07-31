@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -144,6 +145,27 @@ class ReviewBundleTests(unittest.TestCase):
             index["summary"]["sector_cell_counts"],
         )
         self.assertGreater(info["open_review_count"], 0)
+
+    def test_cli_dispatch_exports_bundle(self) -> None:
+        command = [
+            sys.executable,
+            str(TOOLS / "county_cli.py"),
+            "export-open-review-bundle",
+            str(self.database),
+            "--output",
+            str(self.output),
+        ]
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        info = json.loads(completed.stdout)
+        self.assertTrue(info["valid"])
+        self.assertEqual(str(self.output), info["output"])
+        self.assertEqual([], county_review_bundle.validate_bundle(self.output))
 
     def test_bundle_preserves_database_bytes(self) -> None:
         before = self.database.read_bytes()

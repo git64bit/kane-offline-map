@@ -240,6 +240,10 @@ def main() -> int:
             info = county_review_export.export_open_reviews(
                 args.database, args.output, args.force
             )
+        elif args.command == "export-open-review-bundle":
+            info = county_review_bundle.export_open_review_bundle(
+                args.database, args.output, args.force
+            )
         elif args.command == "import-ledger":
             errors = county_db.validate_database(args.database)
             if errors:
