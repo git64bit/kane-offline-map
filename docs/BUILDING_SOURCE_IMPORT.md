@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Batch 008 establishes the first repeatable source-geometry import path. It accepts one immutable countywide building GeoJSON release and stores it as a native GeoPackage feature table alongside the accepted field classification.
+Batch 008 establishes the first repeatable source-geometry import path. It accepts one immutable countywide building GeoJSON release and stores it as a native GeoPackage feature table alongside the accepted field classification. Batch 009 extends it with an explicit refresh path for later authoritative releases.
 
-The import contract does not harvest a county source. Batch 009 extends it with an explicit refresh path for later authoritative harvests.
+Batch 011 supplies the separate acquisition boundary for Kane County GIS ArcGIS data. Harvesting creates canonical GeoJSON and a provenance manifest; importing remains an explicit later action. See `ARCGIS_HARVEST.md`.
 
 ## Accepted input
 
@@ -58,6 +58,10 @@ Features are matched by exact stable source identifier. Each identity is recorde
 - `modified` when geometry and attributes both changed.
 
 The complete comparison is stored in `building_release_comparison` and `building_feature_change`. The previous release becomes `superseded`, while all prior source rows remain immutable. A failed refresh discards the temporary candidate and leaves the accepted database unchanged.
+
+## Authoritative harvest input
+
+The tracked Kane County ArcGIS profile requires `FPId` as the stable identity and writes it into GeoJSON `feature.id`. Therefore a successful harvested output can enter the existing import path without using `OBJECTID` as long-term identity. The paired harvest manifest should be archived with the raw GeoJSON even though the current importer records the GeoJSON file itself. Automatic manifest ingestion is outside Batch 011.
 
 ## Production command
 

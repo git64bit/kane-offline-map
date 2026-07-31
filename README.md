@@ -41,7 +41,7 @@ The browser keeps a compact local safety journal. When the included TrivialHTTP 
 project-data/sectors/
 ```
 
-The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow. Batch 008 adds the first native source-geometry table and a repeatable building GeoJSON import contract. Batch 009 adds candidate-safe building refresh, release comparison, and supersession without overwriting prior feature history. Batch 010 calibrates the completed practical-cell grid from the same county boundary used by the browser, creates exact building-to-cell intersection rows, and opens review records when new or spatially changed buildings intersect muted cells.
+The completed field classification is preserved in `database/input/sectors.zip` as an immutable migration source. Batch 006 imports it into a GeoPackage/SQLite database for continuing SQL and spatial development. Batch 007 establishes the Kane Offline Map project identity and Git-native Linux delivery workflow. Batch 008 adds the first native source-geometry table and a repeatable building GeoJSON import contract. Batch 009 adds candidate-safe building refresh, release comparison, and supersession without overwriting prior feature history. Batch 010 calibrates the completed practical-cell grid from the same county boundary used by the browser, creates exact building-to-cell intersection rows, and opens review records when new or spatially changed buildings intersect muted cells. Batch 011 adds a deterministic ArcGIS REST harvest contract for the public Kane County GIS building-footprint layer, using `FPId` as the stable source identity and producing a hashed provenance manifest beside every harvested GeoJSON release.
 
 ## Development and delivery environment
 
@@ -66,13 +66,14 @@ bash verify-linux.sh
 This command:
 
 1. verifies tracked source checksums and the complete application tree;
-2. creates a candidate GeoPackage from the completed ledger and a synthetic first building release;
-3. calibrates the practical-cell grid from a synthetic county boundary;
-4. refreshes that database with a synthetic second building release;
-5. validates release history, exact building-cell intersections, and muted-cell review triggers; and
-6. runs the database test suite.
+2. validates the official Kane County building source profile without network access;
+3. creates a candidate GeoPackage from the completed ledger and a synthetic first building release;
+4. calibrates the practical-cell grid from a synthetic county boundary;
+5. refreshes that database with a synthetic second building release;
+6. validates release history, exact building-cell intersections, and muted-cell review triggers; and
+7. runs the database and ArcGIS-harvest test suite.
 
-It does not compile TrivialHTTP and does not require a C compiler.
+It does not contact ArcGIS, compile TrivialHTTP, or require a C compiler.
 
 Generated binaries, GeoPackages, and Python cache files are build products and are not part of the source archive.
 
@@ -102,6 +103,8 @@ trivialhttp/build/trivialhttp --root .
 ## Database commands
 
 ```sh
+bash database/validate-source-profile.sh
+bash database/harvest-kane-buildings.sh /path/to/kane-buildings.geojson
 bash database/build-ledger-database.sh
 bash database/validate-ledger-database.sh
 bash database/build-building-database.sh /path/to/buildings.geojson RELEASE_KEY

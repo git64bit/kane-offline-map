@@ -9,6 +9,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
+import county_arcgis
 import county_building_refresh
 import county_db
 import county_ledger
@@ -21,6 +22,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     command = commands.add_parser("init", help="Create an empty candidate GeoPackage.")
     command.add_argument("--output", type=Path, required=True)
+    command.add_argument("--force", action="store_true")
+
+    command = commands.add_parser(
+        "validate-source-profile", help="Validate an offline ArcGIS source profile."
+    )
+    command.add_argument("profile", type=Path)
+
+    command = commands.add_parser(
+        "harvest-arcgis", help="Harvest a deterministic GeoJSON release from ArcGIS."
+    )
+    command.add_argument("--profile", type=Path, required=True)
+    command.add_argument("--output", type=Path, required=True)
+    command.add_argument("--timeout", type=float, default=county_arcgis.DEFAULT_TIMEOUT)
     command.add_argument("--force", action="store_true")
 
     command = commands.add_parser(
@@ -98,6 +112,12 @@ def main() -> int:
         if args.command == "init":
             county_db.initialize_database(args.output, args.force)
             info = county_db.database_info(args.output)
+        elif args.command == "validate-source-profile":
+            info = county_arcgis.profile_info(args.profile)
+        elif args.command == "harvest-arcgis":
+            info = county_arcgis.harvest(
+                args.profile, args.output, args.force, args.timeout
+            )
         elif args.command == "build-ledger":
             info = county_db.build_ledger_database(
                 args.output, args.archive, args.force, args.release_key

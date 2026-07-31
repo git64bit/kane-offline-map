@@ -23,6 +23,9 @@ database/input/sectors.zip
 database/fixtures/buildings-sample.geojson
 database/fixtures/buildings-refresh-v2.geojson
 database/fixtures/county-boundary-sample.geojson
+database/sources/kane-county-buildings.json
+database/harvest-kane-buildings.sh
+database/validate-source-profile.sh
 database/migrations/0005_source_buildings.sql
 database/migrations/0006_building_refresh.sql
 database/migrations/0007_spatial_cell_index.sql
@@ -30,6 +33,7 @@ database/calibrate-spatial-database.sh
 database/refresh-building-database.sh
 database/tools/county_db.py
 database/tools/county_cli.py
+database/tools/county_arcgis.py
 database/tools/county_geometry.py
 database/tools/county_grid.py
 database/tools/county_buildings.py
@@ -38,7 +42,9 @@ database/tools/county_ledger.py
 database/tools/county_spatial.py
 database/tests/test_database.py
 database/tests/test_buildings.py
-database/tests/test_spatial.py'
+database/tests/test_spatial.py
+database/tests/test_arcgis.py
+docs/ARCGIS_HARVEST.md'
 
 printf '%s\n' 'Checking tracked source checksums...'
 sha256sum -c CHECKSUMS.sha256
@@ -62,6 +68,9 @@ if sys.version_info < (3, 9):
     raise SystemExit("Python 3.9 or newer is required")
 print(f"Python {sys.version.split()[0]}")
 PY
+
+printf '%s\n' 'Validating official Kane County ArcGIS source profile offline...'
+bash database/validate-source-profile.sh
 
 printf '%s\n' 'Building ledger and fixture building candidate...'
 bash database/build-building-database.sh \
@@ -90,5 +99,6 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
+printf '%s\n' 'The official ArcGIS profile was validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'

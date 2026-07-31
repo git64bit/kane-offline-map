@@ -2,7 +2,7 @@
 
 This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
-The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers.
+The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered.
 
 ## Development environment
 
@@ -14,9 +14,25 @@ Requirements:
 - Python 3.9 or newer
 - No third-party Python packages
 
-Python supplies the SQLite engine, GeoPackage geometry encoder, migration upgrader, and release comparison tools. Later reprojection or source-format adapters may use GDAL as an external Linux tool, but the database contract does not depend on it.
+Python supplies the SQLite engine, GeoPackage geometry encoder, migration upgrader, release comparison tools, and ArcGIS HTTP client. A live harvest needs outbound HTTPS access, but the complete verification suite is offline and deterministic. Later reprojection or source-format adapters may use GDAL as an external Linux tool, but the database contract does not depend on it.
 
 Shell scripts are invoked through `bash`; executable permission bits are not required.
+
+## Validate and harvest the official building source
+
+Validate the tracked source profile without network access:
+
+```sh
+bash database/validate-source-profile.sh
+```
+
+Create one canonical GeoJSON release and its `.manifest.json` provenance sidecar:
+
+```sh
+bash database/harvest-kane-buildings.sh /path/to/kane-buildings.geojson
+```
+
+The harvester first retrieves the complete ArcGIS object-ID set, then queries exact bounded ID groups as EPSG:4326 GeoJSON. `OBJECTID` controls snapshot retrieval; the county `FPId` field is required as the stable release-to-release feature identity. Missing or duplicate `FPId` values reject the whole candidate. The live harvest is deliberately not part of `verify-linux.sh`. See `docs/ARCGIS_HARVEST.md`.
 
 ## Build the completed ledger database
 
@@ -110,6 +126,13 @@ The supplied scripts set `PYTHONDONTWRITEBYTECODE=1`. They do not require or cre
 ## Direct command use
 
 ```sh
+PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py validate-source-profile \
+  database/sources/kane-county-buildings.json
+
+PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py harvest-arcgis \
+  --profile database/sources/kane-county-buildings.json \
+  --output /path/to/kane-buildings.geojson
+
 PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py build-ledger \
   --archive database/input/sectors.zip \
   --output project-data/database/kane-county-build.gpkg \
