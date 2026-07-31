@@ -25,6 +25,7 @@
           <span><i class="key-box key-undiscovered"></i>Undiscovered</span>
           <span><i class="key-box key-discovered"></i>Discovered</span>
           <span><i class="key-box key-muted"></i>Muted void</span>
+          <span><i class="key-box key-review"></i>Review required</span>
         </div>
       </section>
 
@@ -49,9 +50,15 @@
         <p id="sectorProgress">Loading county progress…</p>
       </section>
 
+      <section class="status-section review-section" aria-live="polite">
+        <h2>Building review</h2>
+        <p id="reviewStatus" data-kind="starting">Review bundle starting…</p>
+        <p id="reviewDetail">Review cells are read-only.</p>
+      </section>
+
       <footer>
         <p id="storageStatus" data-kind="connecting">Browser journal starting…</p>
-        <p class="version">Kane Offline Map · Batch 007</p>
+        <p class="version">Kane Offline Map · Batch 017</p>
         <button id="muteInspection" class="button button-danger bulk-action" type="button" disabled>Mute all 64 cells</button>
       </footer>
     </aside>
@@ -67,7 +74,9 @@
   <script src="src/constants.js"></script>
   <script src="src/grid.js"></script>
   <script src="src/dataLoader.js"></script>
+  <script src="src/reviewBundleLoader.js"></script>
   <script src="src/stateStore.js"></script>
+  <script src="src/reviewOverlay.js"></script>
   <script src="src/renderer.js"></script>
   <script src="src/app.js"></script>
 </body>

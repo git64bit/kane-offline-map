@@ -11,6 +11,8 @@ src/app.js
 src/constants.js
 src/dataLoader.js
 src/grid.js
+src/reviewBundleLoader.js
+src/reviewOverlay.js
 src/renderer.js
 src/stateStore.js
 styles/app.css
@@ -64,10 +66,13 @@ database/tests/test_boundary_harvest.py
 database/tests/test_boundary_acceptance.py
 database/tests/test_review_export.py
 database/tests/test_review_bundle.py
+database/tests/test_browser_review.py
 docs/ARCGIS_HARVEST.md
 docs/HARVEST_ACCEPTANCE.md
 docs/REVIEW_EXPORT.md
-docs/REVIEW_BUNDLE.md'
+docs/REVIEW_BUNDLE.md
+docs/REVIEW_BROWSER.md
+data/reviews/README.txt'
 
 printf '%s\n' 'Checking tracked source checksums...'
 sha256sum -c CHECKSUMS.sha256
@@ -122,6 +127,6 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, review-export, and sector-bundle contracts were validated offline; no live source was contacted.'
+printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, review-export, sector-bundle, and browser-review contracts were validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'

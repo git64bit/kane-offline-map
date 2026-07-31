@@ -12,6 +12,8 @@
     LEGACY_API_ROOT: "/__kane_map/sector-state",
     STORAGE_PATH: "project-data/sectors",
     LOCAL_PREFIX: "county-field-map.sector.v1.",
+    CLASSIFICATION_RELEASE_KEY: "kane-field-ledger-19506566f787",
+    CLASSIFICATION_ARCHIVE_SHA256: "19506566f787b11a02036dce8bf800a33b0a64219046c5e0b89d474b862f09d2",
     WORLD: Object.freeze({ minX: 0, minY: 0, maxX: 1400, maxY: 900 }),
     REFERENCE_GRID: Object.freeze({ rows: 4, cols: 6, startNorth: 11, startEast: 5 }),
     VALID_GRID: Object.freeze({ northMin: 11, northMax: 14, eastMin: 6, eastMax: 9 }),
@@ -36,7 +38,9 @@
       discoveredStroke: "rgba(20,150,82,0.95)",
       muted: "rgba(0,0,0,0.985)",
       selected: "#fde047",
-      complete: "rgba(22,163,74,0.42)"
+      complete: "rgba(22,163,74,0.42)",
+      reviewCounty: "rgba(249,115,22,0.18)",
+      reviewStroke: "rgba(251,146,60,0.98)"
     })
   });
 })(window);

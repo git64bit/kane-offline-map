@@ -42,7 +42,7 @@
           ).filter((item) => item.polygon.length >= 3);
           if (!boundary.length) throw new Error("County boundary contains no polygon geometry.");
           bundleRoot = stripSlash(root);
-          return { bundleRoot, boundary, projection };
+          return { bundleRoot, boundary, projection, rawBounds: { ...rawBounds } };
         } catch (error) {
           lastError = error;
           if (explicitRoot) break;
@@ -150,7 +150,8 @@
       releaseSector,
       boundary: () => boundary,
       currentSector: () => loadedSector,
-      bundleRoot: () => bundleRoot
+      bundleRoot: () => bundleRoot,
+      rawBoundaryBounds: () => projection ? { ...projection.rawBounds } : null
     };
   }
 

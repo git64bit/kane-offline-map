@@ -12,6 +12,7 @@
     const baseCanvas = document.createElement("canvas");
     const baseContext = baseCanvas.getContext("2d", { alpha: false });
     const viewport = createViewport(canvas);
+    const reviewOverlay = CFM.createReviewOverlay(viewport);
     let boundary = [];
     let sectorData = { roads: [], water: [], buildings: [] };
     let level = "county";
@@ -65,6 +66,17 @@
       renderOverlay();
     }
 
+    function setReviewIndex(info) {
+      reviewOverlay.setIndex(info);
+      renderOverlay();
+    }
+
+    function setReviewSector(data) {
+      if (data) reviewOverlay.setSector(data);
+      else reviewOverlay.clearSector();
+      renderOverlay();
+    }
+
     function zoom(factor) {
       viewport.zoom(factor);
       queueRebuild();
@@ -115,9 +127,13 @@
       resetCanvas(context);
       context.drawImage(baseCanvas, 0, 0);
       applyWorldTransform(context, viewport);
-      if (level === "county") drawCountyCompletion(context);
-      else if (level === "sector") drawInspectionCompletion(context);
-      else drawPracticalStates(context);
+      if (level === "county") {
+        drawCountyCompletion(context);
+        reviewOverlay.drawCounty(context);
+      } else if (level === "sector") {
+        drawInspectionCompletion(context);
+        reviewOverlay.drawSector(context, selectedSector);
+      } else drawPracticalStates(context);
     }
 
     function drawCountyBoundary(ctx) {
@@ -194,6 +210,7 @@
       const parentBounds = G.inspectionBounds(selectedSector, selectedInspection.row, selectedInspection.col);
       drawGridLines(ctx, parentBounds, 8, 8, COLORS.gridStrong, 1.0);
       strokeRect(ctx, parentBounds, COLORS.gridStrong, 2.4);
+      reviewOverlay.drawPractical(ctx, selectedSector, selectedInspection);
       if (selectedPractical) {
         const bounds = G.practicalBounds(selectedSector, selectedInspection.row, selectedInspection.col,
           selectedPractical.row, selectedPractical.col);
@@ -315,6 +332,8 @@
       showPractical,
       setSelectedPractical,
       refreshState,
+      setReviewIndex,
+      setReviewSector,
       zoom,
       resetView,
       bindPointerEvents,

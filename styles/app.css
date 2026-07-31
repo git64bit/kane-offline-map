@@ -120,3 +120,11 @@ h2 { margin: 0 0 0.7rem; font-size: 0.82rem; letter-spacing: 0.06em; text-transf
   .control-panel { max-height: none; border-right: 0; border-bottom: 1px solid #d8dce2; }
   .map-workspace { min-height: 65vh; }
 }
+
+.key-review { background: rgba(249, 115, 22, 0.5); border-color: #f97316; }
+.review-section #reviewStatus { color: #172033; font-weight: 700; }
+.review-section #reviewStatus[data-kind="loading"],
+.review-section #reviewStatus[data-kind="loading-sector"] { color: #8a4b08; }
+.review-section #reviewStatus[data-kind="unavailable"],
+.review-section #reviewStatus[data-kind="sector-error"] { color: #9f1d14; }
+#reviewDetail { color: #667085; }

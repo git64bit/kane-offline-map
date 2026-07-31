@@ -1,5 +1,7 @@
 window.CountyFieldMapConfig = Object.freeze({
   // Override with ?bundle=/path/to/prepared-data when needed.
   // The loader also checks data/kane-county, data, prepared, and processing/output/prepared.
-  bundlePath: "processing/output/prepared"
+  bundlePath: "processing/output/prepared",
+  // Override with ?reviews=/path/to/review-bundle when needed.
+  reviewBundlePath: "data/reviews/current"
 });

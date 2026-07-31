@@ -19,6 +19,8 @@
     selectionStatus: document.getElementById("selectionStatus"),
     sectorProgress: document.getElementById("sectorProgress"),
     inspectionProgress: document.getElementById("inspectionProgress"),
+    reviewStatus: document.getElementById("reviewStatus"),
+    reviewDetail: document.getElementById("reviewDetail"),
     storageStatus: document.getElementById("storageStatus"),
     loading: document.getElementById("loadingMessage"),
     fatal: document.getElementById("fatalError")
@@ -26,9 +28,15 @@
 
   let store;
   let loader;
+  let reviewLoader;
   let renderer;
   let selectedPractical = null;
   let transitionToken = 0;
+  let reviewTransitionToken = 0;
+  let reviewIndex = null;
+  let reviewSectorData = null;
+  let reviewKind = "starting";
+  let reviewMessage = "Review bundle starting…";
 
   function requireElements() {
     Object.entries(elements).forEach(([name, element]) => {
@@ -40,6 +48,7 @@
     requireElements();
     store = CFM.createStateStore();
     loader = CFM.createDataLoader();
+    reviewLoader = CFM.createReviewBundleLoader();
     renderer = CFM.createRenderer(elements.canvas, store);
     bindEvents();
     bindStore();
@@ -49,10 +58,29 @@
     renderer.showCounty();
     setLoading("");
     updateUi();
+    initializeReviews(loaded.rawBounds);
     store.connect().catch((error) => {
       console.error("Kane Offline Map storage connection failed", error);
       setStorageStatus("local", `Browser journal active; ${error.message}`);
     });
+  }
+
+  async function initializeReviews(boundaryBounds) {
+    setReviewState("loading", "Loading open-review bundle index…");
+    try {
+      reviewIndex = await reviewLoader.loadIndex(boundaryBounds);
+      renderer.setReviewIndex(reviewIndex);
+      setReviewState("ready", "");
+      const sector = renderer.selectedSector();
+      if (sector) await loadReviewSector(sector, reviewTransitionToken);
+    } catch (error) {
+      console.warn("Kane Offline Map review bundle unavailable", error);
+      reviewIndex = null;
+      reviewSectorData = null;
+      renderer.setReviewIndex(null);
+      renderer.setReviewSector(null);
+      setReviewState("unavailable", error.message);
+    }
   }
 
   function bindEvents() {
@@ -108,10 +136,32 @@
     const current = renderer.selectedSector();
     if (current && current !== sector) await store.flush(current);
     transitionToken += 1;
+    const reviewToken = ++reviewTransitionToken;
     selectedPractical = null;
     loader.releaseSector();
+    reviewLoader.releaseSector();
+    reviewSectorData = null;
+    renderer.setReviewSector(null);
     renderer.showSector(sector);
     updateUi();
+    if (reviewIndex) await loadReviewSector(sector, reviewToken);
+  }
+
+  async function loadReviewSector(sector, token) {
+    setReviewState("loading-sector", `Loading review cells for ${sector}…`);
+    try {
+      const data = await reviewLoader.loadSector(sector);
+      if (token !== reviewTransitionToken || renderer.selectedSector() !== sector) return;
+      reviewSectorData = data;
+      renderer.setReviewSector(data);
+      setReviewState("ready", "");
+    } catch (error) {
+      if (token !== reviewTransitionToken) return;
+      console.warn(`Kane Offline Map review sector ${sector} unavailable`, error);
+      reviewSectorData = null;
+      renderer.setReviewSector(null);
+      setReviewState("sector-error", error.message);
+    }
   }
 
   async function showPractical(sector, inspection) {
@@ -137,11 +187,16 @@
 
   function showCounty() {
     transitionToken += 1;
+    reviewTransitionToken += 1;
     const sector = renderer.selectedSector();
     if (sector) store.flush(sector);
     selectedPractical = null;
     loader.releaseSector();
+    reviewLoader.releaseSector();
+    reviewSectorData = null;
+    renderer.setReviewSector(null);
     renderer.showCounty();
+    if (reviewIndex) setReviewState("ready", "");
     updateUi();
   }
 
@@ -185,6 +240,7 @@
     elements.muteSelected.disabled = !selectedPractical || level !== "practical";
     elements.returnUndiscovered.disabled = !selectedPractical || level !== "practical";
     elements.muteInspection.disabled = level !== "practical";
+    updateReviewUi(level, sector, inspection);
 
     if (level === "county") {
       elements.levelStatus.textContent = "County — select one of the 16 sectors";
@@ -211,6 +267,40 @@
       : "Practical cells load included/green; Shift-click or use Mute selected sector to make a cell black.";
   }
 
+  function updateReviewUi(level, sector, inspection) {
+    elements.reviewStatus.dataset.kind = reviewKind;
+    if (!reviewIndex) {
+      elements.reviewStatus.textContent = reviewKind === "loading" ? reviewMessage : "Open-review layer unavailable.";
+      elements.reviewDetail.textContent = reviewKind === "loading" ? "Classification remains available while the index loads." : reviewMessage;
+      return;
+    }
+    const totals = reviewIndex.summary;
+    if (level === "county") {
+      elements.reviewStatus.textContent = `${formatNumber(totals.open_review_count)} open building reviews in ${formatNumber(totals.review_cell_count)} practical cells.`;
+      elements.reviewDetail.textContent = "Orange sectors contain review cells. Only the selected sector file is loaded.";
+      return;
+    }
+    const item = reviewIndex.sectors.find((entry) => entry.sector_id === sector);
+    elements.reviewStatus.textContent = `${sector}: ${formatNumber(item.open_review_count)} open reviews in ${formatNumber(item.review_cell_count)} practical cells.`;
+    if (reviewKind === "loading-sector") {
+      elements.reviewDetail.textContent = reviewMessage;
+    } else if (reviewKind === "sector-error") {
+      elements.reviewDetail.textContent = `Sector review file unavailable: ${reviewMessage}`;
+    } else if (level === "practical" && reviewSectorData) {
+      const cells = inspectionReviewCells(inspection);
+      const count = cells.reduce((sum, cell) => sum + cell.reviewCount, 0);
+      elements.reviewDetail.textContent = `${formatNumber(count)} open reviews in ${formatNumber(cells.length)} cells in this 8 × 8 grid. Orange outlines are read-only.`;
+    } else {
+      elements.reviewDetail.textContent = "Orange inspection cells contain one or more read-only review cells.";
+    }
+  }
+
+  function inspectionReviewCells(inspection) {
+    if (!reviewSectorData || !inspection) return [];
+    return reviewSectorData.cells.filter((cell) =>
+      cell.inspectionRow === inspection.row && cell.inspectionCol === inspection.col);
+  }
+
   function countyProgressText() {
     let complete = 0;
     let classified = 0;
@@ -225,16 +315,24 @@
   function selectedText(cell) {
     const state = store.getState(cell.sector, cell.index);
     const label = state === K.STATE.MUTED ? "muted" : state === K.STATE.DISCOVERED ? "discovered" : "undiscovered";
-    return `Selected practical cell ${cell.row + 1}-${cell.col + 1}: ${label}.`;
+    const review = reviewSectorData && reviewSectorData.cells.find((item) => item.index === cell.index);
+    const suffix = review ? ` ${formatNumber(review.reviewCount)} open building review${review.reviewCount === 1 ? "" : "s"}.` : "";
+    return `Selected practical cell ${cell.row + 1}-${cell.col + 1}: ${label}.${suffix}`;
   }
 
   function formatNumber(value) {
-    return Number(value).toLocaleString("en-US");
+    return Number(value || 0).toLocaleString("en-US");
   }
 
   function setLoading(message) {
     elements.loading.textContent = message;
     elements.loading.hidden = !message;
+  }
+
+  function setReviewState(kind, message) {
+    reviewKind = kind;
+    reviewMessage = message || "";
+    updateUi();
   }
 
   function setStorageStatus(kind, message) {
