@@ -135,13 +135,18 @@ def accepted_classification(connection: sqlite3.Connection) -> int:
     return rows[0][0]
 
 
-def calibrate_connection(connection: sqlite3.Connection, boundary: Path) -> dict[str, Any]:
+def calibrate_connection(
+    connection: sqlite3.Connection,
+    boundary: Path,
+    boundary_release_id: int | None = None,
+) -> dict[str, Any]:
     raw, bounds = load_boundary(boundary)
     source_hash = sha256_bytes(raw)
     release_id = accepted_classification(connection)
     existing = connection.execute(
         """
-        SELECT boundary_sha256 FROM classification_grid_calibration
+        SELECT boundary_sha256, boundary_release_id
+        FROM classification_grid_calibration
         WHERE classification_release_id = ?
         """,
         (release_id,),
@@ -149,7 +154,19 @@ def calibrate_connection(connection: sqlite3.Connection, boundary: Path) -> dict
     if existing:
         if existing[0] != source_hash:
             raise RuntimeError("Accepted classification grid is already calibrated to a different boundary.")
-        return {"boundary_sha256": source_hash, "already_calibrated": True}
+        if boundary_release_id is not None and existing[1] not in (None, boundary_release_id):
+            raise RuntimeError("Accepted classification grid is linked to a different boundary release.")
+        if boundary_release_id is not None and existing[1] is None:
+            connection.execute(
+                "UPDATE classification_grid_calibration SET boundary_release_id = ? "
+                "WHERE classification_release_id = ?",
+                (boundary_release_id, release_id),
+            )
+        return {
+            "boundary_sha256": source_hash,
+            "boundary_release_id": boundary_release_id or existing[1],
+            "already_calibrated": True,
+        }
     projection = projection_for(bounds)
     now = utc_now()
     connection.execute(
@@ -158,8 +175,9 @@ def calibrate_connection(connection: sqlite3.Connection, boundary: Path) -> dict
             classification_release_id, boundary_relative_path, boundary_sha256,
             boundary_byte_length, srs_id, raw_min_x, raw_min_y, raw_max_x,
             raw_max_y, world_min_x, world_min_y, world_max_x, world_max_y,
-            padding, scale, offset_x, offset_y, calibrated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            padding, scale, offset_x, offset_y, calibrated_at,
+            boundary_release_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             release_id,
@@ -180,10 +198,12 @@ def calibrate_connection(connection: sqlite3.Connection, boundary: Path) -> dict
             projection["offset_x"],
             projection["offset_y"],
             now,
+            boundary_release_id,
         ),
     )
     return {
         "boundary_sha256": source_hash,
+        "boundary_release_id": boundary_release_id,
         "already_calibrated": False,
     }
 

@@ -11,7 +11,7 @@ kane-buildings.geojson
 kane-buildings.geojson.manifest.json
 ```
 
-Batch 012 adds the acceptance boundary between those files and the canonical GeoPackage. The database tools do not trust operator-entered release metadata for an ArcGIS harvest. They derive provenance only after the GeoJSON and manifest pair passes offline validation. Batch 013 applies the same immutable-pair validation to the county-boundary harvest, but SQL preservation of boundary provenance is intentionally deferred to the next bounded batch.
+Batch 012 adds the acceptance boundary between those files and the canonical GeoPackage. The database tools do not trust operator-entered release metadata for an ArcGIS harvest. They derive provenance only after the GeoJSON and manifest pair passes offline validation. Batch 013 applies the same immutable-pair validation to the county-boundary harvest. Batch 014 preserves the accepted boundary release and its two source-file records in SQL, links calibration to that exact release, and promotes only a fully validated candidate database.
 
 ## Validation contract
 
@@ -25,8 +25,8 @@ The acceptance validator requires:
 - the GeoJSON filename, byte length, SHA-256, and feature count;
 - the complete sorted ArcGIS object-ID inventory and its SHA-256;
 - exact page count from the recorded page size;
-- unique object IDs and unique stable `FPId` values;
-- `feature.id` equal to the stable `FPId` value;
+- unique object IDs and unique profile-defined stable IDs;
+- `feature.id` equal to the stable ID (`FPId` for buildings, `OBJECTID` for the boundary);
 - Polygon or MultiPolygon geometry only; and
 - feature order matching ascending ArcGIS object ID.
 
@@ -43,7 +43,7 @@ bash database/validate-kane-building-harvest.sh \
 
 The manifest is found automatically beside the GeoJSON file.
 
-A successful result prints derived acceptance metadata, including the deterministic release key. No database is changed.
+A successful result prints derived acceptance metadata, including the deterministic release key. No database is changed. The county-boundary pair is validated with `database/validate-kane-boundary-harvest.sh` in the same manner.
 
 ## Build the first authoritative database
 
@@ -66,6 +66,25 @@ The command:
 7. promotes the candidate only after success.
 
 An existing output is refused unless `--force` is supplied deliberately.
+
+## Accept the authoritative county boundary
+
+After the building database and boundary pair have both validated:
+
+```sh
+bash database/accept-kane-boundary.sh \
+  /absolute/path/kane-county.gpkg \
+  /absolute/path/kane-boundary.geojson
+```
+
+The command copies the accepted database, applies pending migrations, preserves the boundary release and both source-file records, stores normalized boundary geometry, links grid calibration to that exact release, indexes the accepted buildings against the practical cells, validates the authoritative candidate, and atomically promotes it. A failure leaves the existing database unchanged.
+
+```sh
+bash database/validate-authoritative-database.sh \
+  /absolute/path/kane-county.gpkg
+```
+
+Boundary refresh and supersession are intentionally outside Batch 014.
 
 ## Refresh a later authoritative release
 

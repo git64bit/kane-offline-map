@@ -22,7 +22,7 @@ https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/County_Bounda
 
 Building snapshots use the system-maintained `OBJECTID` only for complete ordered retrieval. The county `FPId` field is required as the stable release-to-release building identity.
 
-The county-boundary profile requires exactly one polygon feature. Its `FID` is sufficient as the snapshot identity because the source contract represents one county-wide geometry, not a collection of independently tracked features.
+The county-boundary profile requires exactly one polygon feature. Its `OBJECTID` is sufficient as the snapshot identity because the source contract represents one county-wide geometry, not a collection of independently tracked features.
 
 A candidate is rejected for missing or duplicate identities, unsupported geometry, an object-ID mismatch, a schema mismatch, or a feature count that violates the tracked profile.
 
@@ -77,4 +77,4 @@ The output and manifest are promoted only after the complete candidate succeeds.
 
 ## Deliberate limits
 
-Batch 013 does not bundle live county data or calibrate the accepted database. The next bounded step will connect a validated boundary pair to candidate-safe grid calibration and preserve its provenance in SQL.
+Batch 014 accepts a validated county-boundary pair through a copied candidate database. It preserves the source release and normalized geometry, links the exact source hash to grid calibration, rebuilds the accepted building-cell index, validates the result, and promotes it atomically. Live source data and generated GeoPackages remain external to Git.

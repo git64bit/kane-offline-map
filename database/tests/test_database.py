@@ -29,7 +29,7 @@ class CountyDatabaseTests(unittest.TestCase):
         info = county_db.database_info(self.database)
         self.assertTrue(info["valid"])
         self.assertEqual("17089", info["county"]["fips_code"])
-        self.assertEqual(7, len(info["migrations"]))
+        self.assertEqual(8, len(info["migrations"]))
         self.assertIsNone(info["accepted_classification"])
 
     def test_refuses_overwrite(self) -> None:

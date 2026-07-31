@@ -2,7 +2,7 @@
 
 This directory contains the migration-driven SQL and GeoPackage tools for Kane Offline Map.
 
-The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered. Batch 012 validates that pair as one immutable source release and derives the SQL release identity and provenance without manual metadata entry. Batch 013 adds the corresponding deterministic harvest and offline acceptance contract for the official county-boundary layer.
+The completed 16-sector JSON ledger is retained only as an immutable migration source. The generated GeoPackage is the working SQL classification store. Batch 008 imports immutable building GeoJSON as native GeoPackage geometry. Batch 009 compares later releases and preserves the complete supersession history. Batch 010 calibrates the browser grid in EPSG:4326, indexes exact building-cell intersections, and creates muted-cell review triggers. Batch 011 adds the authoritative-source acquisition boundary: a deterministic ArcGIS harvest creates canonical GeoJSON and a provenance manifest before any database import is considered. Batch 012 validates that pair as one immutable source release and derives the SQL release identity and provenance without manual metadata entry. Batch 013 adds the corresponding deterministic harvest and offline pair-validation contract for the official county-boundary layer. Batch 014 stores that pair as an immutable GeoPackage release, links it to grid calibration, and constructs the authoritative building-cell index through candidate promotion.
 
 ## Development environment
 
@@ -33,7 +33,7 @@ bash database/harvest-kane-buildings.sh /path/to/kane-buildings.geojson
 bash database/harvest-kane-boundary.sh /path/to/kane-boundary.geojson
 ```
 
-The harvester first retrieves the complete ArcGIS object-ID set, then queries exact bounded ID groups as EPSG:4326 GeoJSON. Building snapshots use `FPId` as the stable feature identity. The boundary profile requires exactly one polygon feature and uses its `FID` as the snapshot identity. Missing, duplicate, or unexpected identities reject the whole candidate. Live harvests are deliberately not part of `verify-linux.sh`. See `docs/ARCGIS_HARVEST.md`.
+The harvester first retrieves the complete ArcGIS object-ID set, then queries exact bounded ID groups as EPSG:4326 GeoJSON. Building snapshots use `FPId` as the stable feature identity. The boundary profile requires exactly one polygon feature and uses its `OBJECTID` as the snapshot identity. Missing, duplicate, or unexpected identities reject the whole candidate. Live harvests are deliberately not part of `verify-linux.sh`. See `docs/ARCGIS_HARVEST.md`.
 
 Validate a completed harvest pair without changing a database:
 
@@ -41,6 +41,18 @@ Validate a completed harvest pair without changing a database:
 bash database/validate-kane-building-harvest.sh /path/to/kane-buildings.geojson
 bash database/validate-kane-boundary-harvest.sh /path/to/kane-boundary.geojson
 ```
+
+Accept the validated boundary into an existing authoritative building database:
+
+```sh
+bash database/accept-kane-boundary.sh \
+  /path/to/kane-county.gpkg \
+  /path/to/kane-boundary.geojson
+
+bash database/validate-authoritative-database.sh /path/to/kane-county.gpkg
+```
+
+The accepted database is copied to a temporary candidate, upgraded, calibrated, spatially indexed, validated, and only then replaced. The source GeoJSON and manifest remain external immutable evidence; their hashes and normalized boundary geometry are preserved in SQL.
 
 Build the first accepted database directly from the completed ledger and a validated official harvest:
 

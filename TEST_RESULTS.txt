@@ -1,19 +1,19 @@
-Batch 013 local Linux verification
+Batch 014 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
 - Official Kane County building source profile offline validation: PASS
 - Official Kane County boundary source profile offline validation: PASS
-- Boundary expected-feature-count contract: PASS
-- Deterministic boundary GeoJSON and manifest generation: PASS
-- Boundary release-key derivation: PASS
-- Existing building harvest and acceptance contracts: PASS
-- Accepted ledger candidate build: PASS
-- Synthetic building releases v1 and v2: PASS
-- Synthetic county-boundary grid calibration: PASS
+- Immutable building and boundary harvest-pair validation: PASS
+- Native GeoPackage county-boundary feature table: PASS
+- Boundary source-file provenance preservation: PASS
+- Boundary-release-to-grid-calibration linkage: PASS
+- Accepted ledger and building fixture candidate: PASS
 - Exact building-to-practical-cell indexing: PASS
 - Muted-cell review trigger generation: PASS
-- Database tests: 52 passed
+- Candidate failure preserves the accepted database: PASS
+- Authoritative database validation: PASS
+- Database tests: 59 passed
 - Live ArcGIS network access: not performed and not required
 - TrivialHTTP compilation: not performed and not required
-- Authoritative county data: not bundled
+- Authoritative county data and generated GeoPackages: not bundled

@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import county_arcgis
+import county_boundary
 import county_building_refresh
 import county_harvest
 import county_db
@@ -107,6 +108,15 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--boundary", type=Path, required=True)
 
     command = commands.add_parser(
+        "accept-harvested-boundary",
+        help="Accept one validated authoritative county boundary and calibrate the grid.",
+    )
+    command.add_argument("database", type=Path)
+    command.add_argument("--profile", type=Path, required=True)
+    command.add_argument("--geojson", type=Path, required=True)
+    command.add_argument("--manifest", type=Path)
+
+    command = commands.add_parser(
         "import-ledger", help="Import the completed field ledger into an existing candidate."
     )
     command.add_argument("database", type=Path)
@@ -118,6 +128,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("validate-ledger", "Require and validate one accepted classification release."),
         ("validate-buildings", "Require and validate one accepted building release."),
         ("validate-spatial", "Require and validate grid calibration and building-cell relations."),
+        ("validate-authoritative", "Require authoritative boundary acceptance and spatial index."),
         ("info", "Print database metadata as JSON."),
     ):
         command = commands.add_parser(name, help=help_text)
@@ -203,6 +214,10 @@ def main() -> int:
             )
         elif args.command == "calibrate-grid":
             info = county_spatial.calibrate_database(args.database, args.boundary)
+        elif args.command == "accept-harvested-boundary":
+            info = county_boundary.accept_harvested_boundary(
+                args.database, args.profile, args.geojson, args.manifest
+            )
         elif args.command == "import-ledger":
             errors = county_db.validate_database(args.database)
             if errors:
@@ -230,6 +245,12 @@ def main() -> int:
                 county_db.validate_spatial_database(args.database),
                 args.database,
                 "spatial building index",
+            )
+        elif args.command == "validate-authoritative":
+            return print_validation(
+                county_db.validate_authoritative_database(args.database),
+                args.database,
+                "authoritative county database",
             )
         elif args.command == "info":
             info = county_db.database_info(args.database)

@@ -37,11 +37,11 @@ Batch 006 imports the completed field ledger as the first accepted classificatio
 
 ### Source geometry
 
-Batch 008 adds `source_building` as the first native GeoPackage feature table. Each immutable building release preserves source identity, attributes, Polygon or MultiPolygon geometry, content hashes, bounds, and source-file provenance. Future migrations will add roads, water, parcels, and addresses.
+Batch 008 adds `source_building` as the first native GeoPackage feature table. Each immutable building release preserves source identity, attributes, Polygon or MultiPolygon geometry, content hashes, bounds, and source-file provenance. Batch 014 adds `source_county_boundary` for the single accepted authoritative county geometry and its harvest provenance. Future migrations will add roads, water, parcels, and addresses.
 
 ### Derived data
 
-Batch 010 adds `classification_grid_calibration`, the `classification_cell_spatial` SQL view, and `building_cell_relation`. Calibration reproduces the browser's exact fitted projection from the authoritative county-boundary extent. The view exposes all 262,144 practical-cell rectangles in EPSG:4326 without duplicating the classification table.
+Batch 010 adds `classification_grid_calibration`, the `classification_cell_spatial` SQL view, and `building_cell_relation`. Calibration reproduces the browser's exact fitted projection from the authoritative county-boundary extent. Batch 014 links that calibration row to the accepted boundary release and sets the county canonical SRS to EPSG:4326. The view exposes all 262,144 practical-cell rectangles in EPSG:4326 without duplicating the classification table.
 
 Each immutable building row is related to every practical cell its Polygon or MultiPolygon geometry actually intersects. The relation is release-specific through `source_building_id` and classification-release-specific through the grid key. Later migrations will add building clusters, road graphs, summaries, and application exports.
 
@@ -57,6 +57,7 @@ Batch 009 adds `building_release_comparison` and `building_feature_change`. A re
 4. Replace the accepted GeoPackage path only after the candidate validates.
 5. Never mutate historical source feature rows.
 6. Preserve prior releases inside the accepted database as superseded history.
+7. Link derived calibration and indexes to the exact accepted source releases that produced them.
 
 A failed build or refresh leaves the existing candidate and accepted databases unchanged.
 

@@ -16,14 +16,15 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
+import county_boundary
 import county_buildings
 import county_building_refresh
 import county_ledger
 import county_spatial
 
 APP_ID = 0x47504B47
-USER_VERSION = 10600
-TOOL_VERSION = "batch-012.0"
+USER_VERSION = 10700
+TOOL_VERSION = "batch-014.0"
 REQUIRED_TABLES = {
     "schema_migration",
     "gpkg_spatial_ref_sys",
@@ -44,6 +45,7 @@ REQUIRED_TABLES = {
     "refresh_issue",
     "release_promotion",
     "source_building",
+    "source_county_boundary",
     "building_release_comparison",
     "building_feature_change",
     "classification_grid_calibration",
@@ -276,6 +278,7 @@ def validate_database(path: Path) -> list[str]:
             errors.extend(county_ledger.classification_errors(connection, require_accepted=False))
             errors.extend(county_building_refresh.building_errors(connection, require_accepted=False))
             errors.extend(county_spatial.spatial_errors(connection, require_calibrated=False))
+            errors.extend(county_boundary.boundary_errors(connection, require_accepted=False))
 
         srs_ids = {
             row[0] for row in connection.execute(
@@ -343,6 +346,20 @@ def validate_spatial_database(path: Path) -> list[str]:
     return errors
 
 
+def validate_authoritative_database(path: Path) -> list[str]:
+    errors = validate_spatial_database(path)
+    if errors or not path.is_file():
+        return errors
+    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        errors.extend(county_boundary.boundary_errors(connection, require_accepted=True))
+    except sqlite3.Error as exc:
+        errors.append(f"County-boundary validation error: {exc}")
+    finally:
+        connection.close()
+    return errors
+
+
 def database_info(path: Path) -> dict[str, object]:
     errors = validate_database(path)
     if errors:
@@ -382,6 +399,7 @@ def database_info(path: Path) -> dict[str, object]:
             **county_ledger.ledger_info(path),
             **county_building_refresh.building_info(path),
             **county_spatial.spatial_info(path),
+            **county_boundary.boundary_info(path),
         }
     finally:
         connection.close()
