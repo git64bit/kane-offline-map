@@ -27,13 +27,13 @@ def profile_document() -> dict[str, Any]:
         "dataset_key": "county-boundary",
         "layer_url": LAYER_URL,
         "where": "1=1",
-        "object_id_field": "FID",
-        "id_property": "FID",
+        "object_id_field": "OBJECTID",
+        "id_property": "OBJECTID",
         "expected_geometry_type": "esriGeometryPolygon",
         "expected_feature_count": 1,
         "out_srs": 4326,
         "page_size": 2000,
-        "out_fields": ["FID"],
+        "out_fields": ["OBJECTID"],
         "copyright_text": "Fixture GIS",
     }
 
@@ -44,10 +44,10 @@ def layer_metadata() -> dict[str, Any]:
         "name": "Fixture County Boundary",
         "geometryType": "esriGeometryPolygon",
         "supportedQueryFormats": "JSON, geoJSON, PBF",
-        "objectIdField": "FID",
+        "objectIdField": "OBJECTID",
         "maxRecordCount": 2000,
         "copyrightText": "Fixture GIS",
-        "fields": [{"name": "FID", "type": "esriFieldTypeOID"}],
+        "fields": [{"name": "OBJECTID", "type": "esriFieldTypeOID"}],
         "editingInfo": {
             "lastEditDate": 1785326400000,
             "dataLastEditDate": 1785240000000,
@@ -59,7 +59,7 @@ def layer_metadata() -> dict[str, Any]:
 def boundary_feature(object_id: int) -> dict[str, Any]:
     return {
         "type": "Feature",
-        "properties": {"FID": object_id},
+        "properties": {"OBJECTID": object_id},
         "geometry": {
             "type": "Polygon",
             "coordinates": [[
@@ -80,7 +80,7 @@ class BoundaryRequester:
         if url == LAYER_URL:
             return copy.deepcopy(layer_metadata())
         if params.get("returnIdsOnly") == "true":
-            return {"objectIdFieldName": "FID", "objectIds": list(self.object_ids)}
+            return {"objectIdFieldName": "OBJECTID", "objectIds": list(self.object_ids)}
         ids = [int(value) for value in params["objectIds"].split(",")]
         return {
             "type": "FeatureCollection",
@@ -93,7 +93,7 @@ class BoundaryProfileTests(unittest.TestCase):
         info = county_arcgis.profile_info(OFFICIAL_PROFILE)
         self.assertTrue(info["valid"])
         self.assertEqual("kane-county-boundary", info["profile_key"])
-        self.assertEqual("FID", info["id_property"])
+        self.assertEqual("OBJECTID", info["id_property"])
         self.assertEqual(1, info["expected_feature_count"])
         self.assertIn("County_Boundary", info["layer_url"])
 
@@ -130,7 +130,7 @@ class BoundaryHarvestTests(unittest.TestCase):
         accepted = county_harvest.validate_harvest(self.profile, self.output)
         self.assertEqual(1, info["feature_count"])
         self.assertEqual(1, accepted["feature_count"])
-        self.assertEqual("FID", accepted["id_property"])
+        self.assertEqual("OBJECTID", accepted["id_property"])
         self.assertTrue(accepted["release_key"].startswith("kane-county-boundary-20260728-"))
 
     def test_wrong_live_feature_count_is_rejected_before_output(self) -> None:

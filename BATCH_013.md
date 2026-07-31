@@ -21,3 +21,7 @@
 - No live county-boundary data is committed.
 - No accepted database is calibrated in this batch.
 - No database schema or TrivialHTTP behavior changes.
+
+## Live-source correction
+
+The first live boundary harvest correctly failed closed because the service reports `OBJECTID`, not `FID`, as its object-ID field. The tracked boundary profile and its offline fixtures now require `OBJECTID`. The failed attempt produced no accepted boundary output.
