@@ -113,6 +113,39 @@ def validate_features(
     return object_ids, stable_ids
 
 
+
+
+def validate_exclusions(
+    document: dict[str, Any], manifest: dict[str, Any], profile: dict[str, Any]
+) -> list[int]:
+    policy = profile.get("missing_geometry_policy", "reject")
+    output_record = document.get("exclusions")
+    manifest_record = manifest.get("exclusions")
+    if output_record is None and manifest_record is None:
+        if policy == "exclude":
+            raise RuntimeError("Harvest exclusion record is missing.")
+        return []
+    if not isinstance(output_record, dict) or not isinstance(manifest_record, dict):
+        raise RuntimeError("Harvest exclusion record is missing or invalid.")
+    require_equal(output_record, manifest_record, "exclusion record")
+    require_equal(output_record.get("policy"), policy, "exclusion policy")
+    require_equal(output_record.get("reason"), "missing_geometry", "exclusion reason")
+    raw_ids = output_record.get("object_ids")
+    if not isinstance(raw_ids, list):
+        raise RuntimeError("Harvest exclusion object-ID list is invalid.")
+    object_ids = [county_arcgis.object_id(value, profile["object_id_field"]) for value in raw_ids]
+    if object_ids != sorted(set(object_ids)):
+        raise RuntimeError("Harvest exclusion object IDs are not unique and ordered.")
+    require_equal(output_record.get("object_id_count"), len(object_ids), "exclusion count")
+    require_equal(
+        output_record.get("object_ids_sha256"),
+        county_arcgis.sha256_bytes(county_arcgis.canonical_bytes(object_ids)),
+        "exclusion object-ID hash",
+    )
+    if policy == "reject" and object_ids:
+        raise RuntimeError("Harvest contains exclusions under the reject policy.")
+    return object_ids
+
 def validate_harvest(
     profile_path: Path, geojson_path: Path, manifest_file: Path | None = None
 ) -> dict[str, Any]:
@@ -159,12 +192,16 @@ def validate_harvest(
     require_equal(output_record.get("byte_length"), len(output_raw), "output byte length")
     require_equal(output_record.get("sha256"), output_hash, "output hash")
 
-    object_ids, stable_ids = validate_features(document, profile, manifest)
-    require_equal(output_record.get("feature_count"), len(object_ids), "feature count")
+    feature_object_ids, feature_stable_ids = validate_features(document, profile, manifest)
+    excluded_object_ids = validate_exclusions(document, manifest, profile)
+    if set(feature_object_ids) & set(excluded_object_ids):
+        raise RuntimeError("Harvest output and exclusion object IDs overlap.")
+    source_object_ids = sorted(feature_object_ids + excluded_object_ids)
+    require_equal(output_record.get("feature_count"), len(feature_object_ids), "feature count")
     expected_count = profile.get("expected_feature_count")
-    if expected_count is not None and len(object_ids) != expected_count:
+    if expected_count is not None and len(source_object_ids) != expected_count:
         raise RuntimeError(
-            f"Harvest output contains {len(object_ids)} features; expected {expected_count}."
+            f"Harvest source contains {len(source_object_ids)} records; expected {expected_count}."
         )
 
     request = manifest.get("request")
@@ -175,13 +212,15 @@ def validate_harvest(
     page_size = request.get("page_size")
     if not isinstance(page_size, int) or isinstance(page_size, bool) or page_size < 1:
         raise RuntimeError("Harvest manifest page size is invalid.")
-    require_equal(request.get("object_id_count"), len(object_ids), "object ID count")
+    require_equal(request.get("object_id_count"), len(source_object_ids), "object ID count")
     require_equal(
         request.get("object_ids_sha256"),
-        county_arcgis.sha256_bytes(county_arcgis.canonical_bytes(object_ids)),
+        county_arcgis.sha256_bytes(county_arcgis.canonical_bytes(source_object_ids)),
         "object ID inventory hash",
     )
-    require_equal(request.get("page_count"), math.ceil(len(object_ids) / page_size), "page count")
+    require_equal(
+        request.get("page_count"), math.ceil(len(source_object_ids) / page_size), "page count"
+    )
 
     harvested_at = parse_timestamp(manifest.get("harvested_at"), "harvested_at")
     published_at = chosen_published_at(manifest)
@@ -200,7 +239,8 @@ def validate_harvest(
         "manifest": str(manifest_file),
         "geojson_sha256": output_hash,
         "manifest_sha256": manifest_hash,
-        "feature_count": len(object_ids),
-        "object_id_count": len(object_ids),
-        "stable_id_count": len(stable_ids),
+        "feature_count": len(feature_object_ids),
+        "object_id_count": len(source_object_ids),
+        "stable_id_count": len(feature_stable_ids) + len(excluded_object_ids),
+        "excluded_feature_count": len(excluded_object_ids),
     }

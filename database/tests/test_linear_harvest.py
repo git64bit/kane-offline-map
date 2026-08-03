@@ -120,6 +120,8 @@ class OfficialLinearProfileTests(unittest.TestCase):
             self.assertEqual(geometry, profile["expected_geometry_type"])
             self.assertIn(service, profile["layer_url"])
             self.assertTrue(profile["layer_url"].endswith("/FeatureServer/1"))
+        road_profile, _ = county_arcgis.load_profile(ROAD_PROFILE)
+        self.assertEqual("exclude", road_profile["missing_geometry_policy"])
 
     def test_profile_info_reports_geometry_contract(self) -> None:
         info = county_arcgis.profile_info(ROAD_PROFILE)
@@ -129,6 +131,25 @@ class OfficialLinearProfileTests(unittest.TestCase):
         profile = profile_document("esriGeometryPoint")
         errors = county_arcgis.profile_errors(profile)
         self.assertTrue(any("Unsupported ArcGIS geometry contract" in item for item in errors))
+
+    def test_missing_geometry_exclusion_requires_object_id_identity(self) -> None:
+        profile = profile_document()
+        profile["missing_geometry_policy"] = "exclude"
+        profile["id_property"] = "ROAD_ID"
+        profile["out_fields"].append("ROAD_ID")
+        errors = county_arcgis.profile_errors(profile)
+        self.assertIn(
+            "missing_geometry_policy 'exclude' requires id_property to equal object_id_field.",
+            errors,
+        )
+
+    def test_unknown_missing_geometry_policy_is_rejected(self) -> None:
+        profile = profile_document()
+        profile["missing_geometry_policy"] = "ignore"
+        self.assertIn(
+            "missing_geometry_policy must be 'reject' or 'exclude'.",
+            county_arcgis.profile_errors(profile),
+        )
 
 
 class LinearHarvestTests(unittest.TestCase):
@@ -182,6 +203,51 @@ class LinearHarvestTests(unittest.TestCase):
         self.requester.features[1]["geometry"]["coordinates"] = [[-88.6, 41.8]]
         with self.assertRaisesRegex(RuntimeError, "at least 2 coordinate pairs"):
             self.harvest()
+
+    def test_missing_geometry_is_rejected_by_default(self) -> None:
+        self.requester.features[2]["geometry"] = None
+        with self.assertRaisesRegex(RuntimeError, "geometry is missing or invalid"):
+            self.harvest()
+
+    def test_profile_can_exclude_and_record_missing_geometry(self) -> None:
+        profile = profile_document()
+        profile["missing_geometry_policy"] = "exclude"
+        self.profile.write_text(json.dumps(profile), encoding="utf-8")
+        self.requester.features[2]["geometry"] = None
+        info = self.harvest()
+        document = json.loads(self.output.read_text(encoding="utf-8"))
+        manifest = json.loads(county_arcgis.manifest_path(self.output).read_text(encoding="utf-8"))
+        accepted = county_harvest.validate_harvest(self.profile, self.output)
+        self.assertEqual(["1", "3"], [item["id"] for item in document["features"]])
+        self.assertEqual([2], document["exclusions"]["object_ids"])
+        self.assertEqual(document["exclusions"], manifest["exclusions"])
+        self.assertEqual(2, info["feature_count"])
+        self.assertEqual(3, info["source_record_count"])
+        self.assertEqual(1, info["excluded_feature_count"])
+        self.assertEqual(2, accepted["feature_count"])
+        self.assertEqual(3, accepted["object_id_count"])
+        self.assertEqual(1, accepted["excluded_feature_count"])
+
+    def test_exclusion_policy_does_not_accept_malformed_geometry(self) -> None:
+        profile = profile_document()
+        profile["missing_geometry_policy"] = "exclude"
+        self.profile.write_text(json.dumps(profile), encoding="utf-8")
+        self.requester.features[2]["geometry"] = {}
+        with self.assertRaisesRegex(RuntimeError, "expected LineString or MultiLineString"):
+            self.harvest()
+
+    def test_exclusion_inventory_hash_is_validated(self) -> None:
+        profile = profile_document()
+        profile["missing_geometry_policy"] = "exclude"
+        self.profile.write_text(json.dumps(profile), encoding="utf-8")
+        self.requester.features[2]["geometry"] = None
+        self.harvest()
+        document = json.loads(self.output.read_text(encoding="utf-8"))
+        manifest = json.loads(county_arcgis.manifest_path(self.output).read_text(encoding="utf-8"))
+        document["exclusions"]["object_ids_sha256"] = "0" * 64
+        manifest["exclusions"] = copy.deepcopy(document["exclusions"])
+        with self.assertRaisesRegex(RuntimeError, "exclusion object-ID hash"):
+            county_harvest.validate_exclusions(document, manifest, profile)
 
 
 if __name__ == "__main__":

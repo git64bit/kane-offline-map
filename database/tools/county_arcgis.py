@@ -21,14 +21,11 @@ MANIFEST_SCHEMA = 1
 DEFAULT_TIMEOUT = 120.0
 Requester = Callable[[str, dict[str, str], float], dict[str, Any]]
 
-
 def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
-
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
-
 
 def canonical_bytes(value: Any) -> bytes:
     return (
@@ -42,10 +39,8 @@ def canonical_bytes(value: Any) -> bytes:
         + "\n"
     ).encode("utf-8")
 
-
 def manifest_path(output: Path) -> Path:
     return Path(str(output) + ".manifest.json")
-
 
 def arcgis_error(document: Any) -> RuntimeError | None:
     if not isinstance(document, dict) or "error" not in document:
@@ -57,7 +52,6 @@ def arcgis_error(document: Any) -> RuntimeError | None:
     detail = "; ".join(str(item) for item in details if item)
     suffix = f" ({detail})" if detail else ""
     return RuntimeError(f"ArcGIS error {code}: {message}{suffix}")
-
 
 def http_request_json(url: str, params: dict[str, str], timeout: float) -> dict[str, Any]:
     encoded = urllib.parse.urlencode(params).encode("utf-8")
@@ -90,7 +84,6 @@ def http_request_json(url: str, params: dict[str, str], timeout: float) -> dict[
     if not isinstance(document, dict):
         raise RuntimeError("ArcGIS response is not a JSON object.")
     return document
-
 
 def profile_errors(profile: Any) -> list[str]:
     if not isinstance(profile, dict):
@@ -135,6 +128,11 @@ def profile_errors(profile: Any) -> list[str]:
         not isinstance(expected_count, int) or isinstance(expected_count, bool) or expected_count < 1
     ):
         errors.append("expected_feature_count must be a positive integer when provided.")
+    missing_policy = profile.get("missing_geometry_policy", "reject")
+    if missing_policy not in ("reject", "exclude"):
+        errors.append("missing_geometry_policy must be 'reject' or 'exclude'.")
+    elif missing_policy == "exclude" and profile.get("id_property") != profile.get("object_id_field"):
+        errors.append("missing_geometry_policy 'exclude' requires id_property to equal object_id_field.")
     out_fields = profile.get("out_fields")
     if not isinstance(out_fields, list) or not out_fields:
         errors.append("out_fields must be a non-empty array.")
@@ -149,7 +147,6 @@ def profile_errors(profile: Any) -> list[str]:
                 errors.append(f"out_fields must include {value!r} from {key}.")
     return errors
 
-
 def load_profile(path: Path) -> tuple[dict[str, Any], bytes]:
     raw = path.read_bytes()
     try:
@@ -160,7 +157,6 @@ def load_profile(path: Path) -> tuple[dict[str, Any], bytes]:
     if errors:
         raise RuntimeError("Invalid ArcGIS source profile:\n- " + "\n- ".join(errors))
     return profile, raw
-
 
 def profile_info(path: Path) -> dict[str, Any]:
     profile, raw = load_profile(path)
@@ -175,9 +171,9 @@ def profile_info(path: Path) -> dict[str, Any]:
         "page_size": profile["page_size"],
         "expected_feature_count": profile.get("expected_feature_count"),
         "expected_geometry_type": profile["expected_geometry_type"],
+        "missing_geometry_policy": profile.get("missing_geometry_policy", "reject"),
         "profile_sha256": sha256_bytes(raw),
     }
-
 
 def format_supported(value: Any) -> set[str]:
     if isinstance(value, str):
@@ -185,7 +181,6 @@ def format_supported(value: Any) -> set[str]:
     if isinstance(value, list):
         return {str(item).strip().lower() for item in value if str(item).strip()}
     return set()
-
 
 def validate_layer_metadata(profile: dict[str, Any], metadata: dict[str, Any]) -> None:
     errors: list[str] = []
@@ -215,11 +210,9 @@ def validate_layer_metadata(profile: dict[str, Any], metadata: dict[str, Any]) -
     if errors:
         raise RuntimeError("ArcGIS layer metadata mismatch:\n- " + "\n- ".join(errors))
 
-
 def chunks(values: list[int], size: int) -> Iterable[list[int]]:
     for start in range(0, len(values), size):
         yield values[start : start + size]
-
 
 def stable_text(value: Any, label: str) -> str:
     if value is None or isinstance(value, bool):
@@ -228,7 +221,6 @@ def stable_text(value: Any, label: str) -> str:
     if not text:
         raise RuntimeError(f"ArcGIS feature is missing stable {label}.")
     return text
-
 
 def object_id(value: Any, field: str) -> int:
     if isinstance(value, bool):
@@ -241,7 +233,6 @@ def object_id(value: Any, field: str) -> int:
         raise RuntimeError(f"ArcGIS feature has invalid {field}: {value!r}.")
     return result
 
-
 def normalize_page(
     document: dict[str, Any],
     expected_ids: list[int],
@@ -249,10 +240,12 @@ def normalize_page(
     stable_field: str,
     expected_geometry_type: str,
     seen_stable: set[str],
+    missing_geometry_policy: str = "reject",
+    excluded_object_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     if document.get("type") != "FeatureCollection" or not isinstance(document.get("features"), list):
         raise RuntimeError("ArcGIS feature query did not return a GeoJSON FeatureCollection.")
-    by_object: dict[int, dict[str, Any]] = {}
+    by_object: dict[int, dict[str, Any] | None] = {}
     for feature in document["features"]:
         if not isinstance(feature, dict) or feature.get("type") != "Feature":
             raise RuntimeError("ArcGIS GeoJSON contains a non-Feature item.")
@@ -265,12 +258,17 @@ def normalize_page(
         stable_id = stable_text(properties.get(stable_field), stable_field)
         if stable_id in seen_stable:
             raise RuntimeError(f"ArcGIS harvest contains duplicate stable ID {stable_id}.")
-        county_geojson.validate_geometry(
-            feature.get("geometry"), expected_geometry_type, f"feature {stable_id}"
-        )
-        feature = dict(feature)
-        feature["id"] = stable_id
-        by_object[current_object_id] = feature
+        geometry = feature.get("geometry")
+        if geometry is None and missing_geometry_policy == "exclude":
+            if excluded_object_ids is None:
+                raise RuntimeError("Missing-geometry exclusion list was not supplied.")
+            by_object[current_object_id] = None
+            excluded_object_ids.append(current_object_id)
+        else:
+            county_geojson.validate_geometry(geometry, expected_geometry_type, f"feature {stable_id}")
+            feature = dict(feature)
+            feature["id"] = stable_id
+            by_object[current_object_id] = feature
         seen_stable.add(stable_id)
     expected = set(expected_ids)
     actual = set(by_object)
@@ -278,15 +276,13 @@ def normalize_page(
         missing = sorted(expected - actual)
         extra = sorted(actual - expected)
         raise RuntimeError(f"ArcGIS page object ID mismatch; missing={missing}, extra={extra}.")
-    return [by_object[current] for current in expected_ids]
-
+    return [by_object[current] for current in expected_ids if by_object[current] is not None]
 
 def epoch_millis_iso(value: Any) -> str | None:
     if not isinstance(value, (int, float)) or isinstance(value, bool):
         return None
     moment = dt.datetime.fromtimestamp(float(value) / 1000.0, tz=dt.timezone.utc)
     return moment.isoformat(timespec="milliseconds").replace("+00:00", "Z")
-
 
 def source_summary(profile: dict[str, Any], metadata: dict[str, Any]) -> dict[str, Any]:
     editing = metadata.get("editingInfo") if isinstance(metadata.get("editingInfo"), dict) else {}
@@ -307,7 +303,6 @@ def source_summary(profile: dict[str, Any], metadata: dict[str, Any]) -> dict[st
         "layer_schema_last_edit_at": epoch_millis_iso(edit_value("schemaLastEditDate")),
     }
 
-
 def write_temporary(path: Path, data: bytes) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     handle, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".candidate", dir=path.parent)
@@ -320,7 +315,6 @@ def write_temporary(path: Path, data: bytes) -> Path:
         Path(temporary_name).unlink(missing_ok=True)
         raise
     return Path(temporary_name)
-
 
 def promote_pair(output: Path, output_data: bytes, manifest_data: bytes, force: bool) -> None:
     sidecar = manifest_path(output)
@@ -367,7 +361,6 @@ def promote_pair(output: Path, output_data: bytes, manifest_data: bytes, force: 
         output_backup.unlink(missing_ok=True)
         manifest_backup.unlink(missing_ok=True)
 
-
 def harvest(
     profile_path: Path,
     output: Path,
@@ -408,6 +401,7 @@ def harvest(
     max_records = int(metadata["maxRecordCount"])
     page_size = min(profile["page_size"], max_records)
     features: list[dict[str, Any]] = []
+    excluded_object_ids: list[int] = []
     seen_stable: set[str] = set()
     page_count = 0
     for page_ids in chunks(object_ids, page_size):
@@ -433,15 +427,26 @@ def harvest(
                 profile["id_property"],
                 profile["expected_geometry_type"],
                 seen_stable,
+                profile.get("missing_geometry_policy", "reject"),
+                excluded_object_ids,
             )
         )
     source = source_summary(profile, metadata)
+    exclusion_record = {
+        "policy": profile.get("missing_geometry_policy", "reject"),
+        "reason": "missing_geometry",
+        "object_id_count": len(excluded_object_ids),
+        "object_ids": excluded_object_ids,
+        "object_ids_sha256": sha256_bytes(canonical_bytes(excluded_object_ids)),
+    }
     collection = {
         "type": "FeatureCollection",
         "name": profile["profile_key"],
         "source": source,
         "features": features,
     }
+    if exclusion_record["policy"] == "exclude":
+        collection["exclusions"] = exclusion_record
     output_data = canonical_bytes(collection)
     metadata_data = canonical_bytes(metadata)
     ids_data = canonical_bytes(object_ids)
@@ -462,6 +467,7 @@ def harvest(
             "object_id_count": len(object_ids),
             "object_ids_sha256": sha256_bytes(ids_data),
         },
+        "exclusions": exclusion_record if exclusion_record["policy"] == "exclude" else None,
         "layer_metadata": metadata,
         "layer_metadata_sha256": sha256_bytes(metadata_data),
         "output": {
@@ -471,6 +477,8 @@ def harvest(
             "feature_count": len(features),
         },
     }
+    if manifest["exclusions"] is None:
+        del manifest["exclusions"]
     manifest_data = canonical_bytes(manifest)
     promote_pair(output, output_data, manifest_data, force)
     return {
@@ -479,6 +487,8 @@ def harvest(
         "output": str(output),
         "manifest": str(manifest_path(output)),
         "feature_count": len(features),
+        "source_record_count": len(object_ids),
+        "excluded_feature_count": len(excluded_object_ids),
         "page_count": page_count,
         "sha256": sha256_bytes(output_data),
         "source": source,

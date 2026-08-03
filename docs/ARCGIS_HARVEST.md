@@ -22,7 +22,7 @@ Building snapshots use the system-maintained `OBJECTID` for complete ordered ret
 
 The county boundary, roads, Fox River, and creek profiles use the service-maintained `OBJECTID` as snapshot identity. These datasets are accepted as immutable source releases; later release comparison is based on their exact harvested content and provenance.
 
-A candidate is rejected for missing or duplicate identities, unsupported or malformed geometry, an object-ID mismatch, a schema mismatch, or a feature count that violates the tracked profile.
+A candidate is rejected for missing or duplicate identities, unsupported or malformed geometry, an object-ID mismatch, a schema mismatch, or a feature count that violates the tracked profile. Missing geometry is also rejected unless the tracked profile explicitly selects the audited `exclude` policy and uses the ArcGIS object ID as its stable identity.
 
 ## Geometry policy
 
@@ -34,6 +34,8 @@ esriGeometryPolyline -> LineString or MultiLineString
 ```
 
 Polygon rings must be closed and contain at least four coordinate pairs. Line paths must contain at least two finite coordinate pairs.
+
+The road-centerline profile uses `missing_geometry_policy: exclude` because the live service contains at least one source record without geometry. Only a null or absent geometry is excludable. Every excluded object ID is sorted, counted, and hashed in both output files. An empty object, malformed path, degenerate path, nonfinite coordinate, or wrong geometry type still rejects the candidate.
 
 ## Retrieval method
 
@@ -80,7 +82,7 @@ The commands use Python's standard library. No compiler, GDAL installation, or t
 
 ## Manifest contents
 
-Each sidecar records the source-profile hash, complete layer metadata and hash, source edit timestamps, query contract, object-ID inventory hash, page and feature counts, output byte length and SHA-256, and harvest timestamp.
+Each sidecar records the source-profile hash, complete layer metadata and hash, source edit timestamps, query contract, complete source object-ID inventory hash, page and spatial-feature counts, output byte length and SHA-256, and harvest timestamp. When the tracked policy permits missing-geometry exclusion, both the GeoJSON and manifest also record the exact excluded object IDs, count, reason, and hash.
 
 The output and manifest are promoted only after the complete candidate succeeds. Network, schema, identity, geometry, and count failures leave an existing pair unchanged.
 

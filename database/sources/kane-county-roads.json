@@ -13,5 +13,6 @@
   "out_fields": [
     "OBJECTID"
   ],
-  "copyright_text": "Kane County, GIS"
+  "copyright_text": "Kane County, GIS",
+  "missing_geometry_policy": "exclude"
 }

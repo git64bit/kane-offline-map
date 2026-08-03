@@ -1,6 +1,6 @@
 # Road and Water SQL Acceptance
 
-Kane Offline Map accepts the road-centerline, Fox River, and creek harvests as one candidate-safe operation. The three validated GeoJSON/manifest pairs remain external immutable evidence; their filenames, byte lengths, SHA-256 hashes, source profile versions, publication timestamps, harvest timestamps, and source URIs are preserved in the GeoPackage.
+Kane Offline Map accepts the road-centerline, Fox River, and creek harvests as one candidate-safe operation. The three validated GeoJSON/manifest pairs remain external immutable evidence; their filenames, byte lengths, SHA-256 hashes, source profile versions, publication timestamps, harvest timestamps, source URIs, and any audited missing-geometry exclusions are preserved in the GeoPackage.
 
 ## Required inputs
 
@@ -34,6 +34,6 @@ This requires accepted classification, buildings, county boundary, roads, Fox Ri
 
 ## Geometry storage
 
-Roads and creeks are stored as EPSG:4326 LineString or MultiLineString features. The Fox River is stored as EPSG:4326 Polygon or MultiPolygon features. Every row carries its stable source ID, source ordinal, GeoPackage geometry BLOB, canonical attribute JSON, per-part hashes, complete content hash, and numeric bounds.
+Roads and creeks are stored as EPSG:4326 LineString or MultiLineString features. Source road records explicitly listed as missing-geometry exclusions are preserved in harvest provenance but cannot produce a spatial row. The Fox River is stored as EPSG:4326 Polygon or MultiPolygon features. Every row carries its stable source ID, source ordinal, GeoPackage geometry BLOB, canonical attribute JSON, per-part hashes, complete content hash, and numeric bounds.
 
 Road and water refresh is intentionally refused until a later batch defines comparison and supersession semantics.

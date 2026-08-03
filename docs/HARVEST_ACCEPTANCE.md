@@ -24,10 +24,11 @@ The acceptance validator requires:
 - canonical UTF-8 JSON serialization for both files;
 - the GeoJSON filename, byte length, SHA-256, and feature count;
 - the complete sorted ArcGIS object-ID inventory and its SHA-256;
+- an exact hashed exclusion inventory when the tracked profile permits source records with absent geometry;
 - exact page count from the recorded page size;
 - unique object IDs and unique profile-defined stable IDs;
 - `feature.id` equal to the stable ID (`FPId` for buildings, `OBJECTID` for the boundary);
-- Polygon or MultiPolygon geometry only; and
+- geometry matching the tracked polygon or polyline contract for every accepted spatial feature; and
 - feature order matching ascending ArcGIS object ID.
 
 Changing either file after harvest invalidates the pair. Equivalent but reserialized JSON is also rejected because the preserved source hash must identify exact bytes.

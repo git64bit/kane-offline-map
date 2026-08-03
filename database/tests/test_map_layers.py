@@ -78,6 +78,8 @@ class LayerRequester:
         self.profile, _ = county_arcgis.load_profile(profile_path)
         factory = polygon_feature if self.profile["expected_geometry_type"] == "esriGeometryPolygon" else line_feature
         self.features = {value: factory(value) for value in (1, 2, 3)}
+        if self.profile.get("missing_geometry_policy") == "exclude":
+            self.features[2]["geometry"] = None
 
     def __call__(self, url: str, params: dict[str, str], timeout: float) -> dict[str, Any]:
         if url == self.profile["layer_url"]:
@@ -210,8 +212,9 @@ class MapLayerAcceptanceTests(unittest.TestCase):
 
     def test_release_provenance_and_counts_are_reported(self) -> None:
         info = county_db.database_info(self.deployment)["accepted_map_layers"]
+        expected_counts = {"roads": 2, "water-fox-river": 3, "water-creeks": 3}
         for dataset_key in county_map_layers.DATASETS:
-            self.assertEqual(3, info[dataset_key]["feature_count"])
+            self.assertEqual(expected_counts[dataset_key], info[dataset_key]["feature_count"])
             self.assertEqual(64, len(info[dataset_key]["content_sha256"]))
             self.assertEqual(4326, info[dataset_key]["srs_id"])
 
