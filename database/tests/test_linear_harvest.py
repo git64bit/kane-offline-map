@@ -119,6 +119,7 @@ class OfficialLinearProfileTests(unittest.TestCase):
             self.assertEqual(dataset, profile["dataset_key"])
             self.assertEqual(geometry, profile["expected_geometry_type"])
             self.assertIn(service, profile["layer_url"])
+            self.assertTrue(profile["layer_url"].endswith("/FeatureServer/1"))
 
     def test_profile_info_reports_geometry_contract(self) -> None:
         info = county_arcgis.profile_info(ROAD_PROFILE)

@@ -9,3 +9,7 @@ Tracked source profiles are added for the official Kane County road-centerline, 
 The geometry validator rejects mismatched, degenerate, nonfinite, or structurally invalid line and polygon geometry before candidate promotion. Existing building and county-boundary contracts remain unchanged.
 
 This batch adds only source acquisition and offline validation. It does not contact ArcGIS during normal verification, alter the authoritative GeoPackage, merge water layers, complete the prepared browser bundle, or produce the final USB ZIP.
+
+## Live-source correction
+
+The first live road and water harvest attempt correctly failed closed because each ArcGIS service publishes its feature layer at child layer ID `1`, not `0`. The tracked road, Fox River, and creek profiles now target `/FeatureServer/1`. The failed attempts produced no harvest output and did not modify the authoritative GeoPackage.

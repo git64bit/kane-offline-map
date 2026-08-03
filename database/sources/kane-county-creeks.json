@@ -3,7 +3,7 @@
   "profile_key": "kane-county-creeks",
   "agency_key": "kane-county-gis",
   "dataset_key": "water-creeks",
-  "layer_url": "https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/KaneCo_IL_Creeks/FeatureServer/0",
+  "layer_url": "https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/KaneCo_IL_Creeks/FeatureServer/1",
   "where": "1=1",
   "object_id_field": "OBJECTID",
   "id_property": "OBJECTID",
