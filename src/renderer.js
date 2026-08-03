@@ -14,7 +14,7 @@
     const viewport = createViewport(canvas);
     const reviewOverlay = CFM.createReviewOverlay(viewport);
     let boundary = [];
-    let sectorData = { roads: [], water: [], buildings: [] };
+    let sectorData = { roads: [], water: [], waterLines: [], buildings: [] };
     let level = "county";
     let selectedSector = null;
     let selectedInspection = null;
@@ -33,7 +33,7 @@
       selectedSector = null;
       selectedInspection = null;
       selectedPractical = null;
-      sectorData = { roads: [], water: [], buildings: [] };
+      sectorData = { roads: [], water: [], waterLines: [], buildings: [] };
       viewport.fit(K.WORLD, 36);
       rebuildBase();
     }
@@ -52,7 +52,7 @@
       selectedSector = sector;
       selectedInspection = { row: inspection.row, col: inspection.col };
       selectedPractical = null;
-      sectorData = data || { roads: [], water: [], buildings: [] };
+      sectorData = data || { roads: [], water: [], waterLines: [], buildings: [] };
       viewport.fit(G.inspectionBounds(sector, inspection.row, inspection.col), 54);
       rebuildBase();
     }
@@ -166,6 +166,7 @@
       pathRect(ctx, bounds);
       ctx.clip();
       drawAreas(ctx, sectorData.water, bounds, COLORS.water, "rgba(58,104,160,0.9)", 0.8);
+      drawPaths(ctx, sectorData.waterLines, bounds, COLORS.water, 0.34);
       drawRoads(ctx, sectorData.roads, bounds);
       drawAreas(ctx, sectorData.buildings, bounds, COLORS.building, COLORS.buildingStroke, 0.75);
       ctx.restore();
@@ -229,15 +230,21 @@
     }
 
     function drawRoads(ctx, roads, clipBounds) {
-      ctx.strokeStyle = COLORS.road;
+      drawPaths(ctx, roads, clipBounds, COLORS.road, 0.34);
+    }
+
+    function drawPaths(ctx, features, clipBounds, color, widthScale) {
+      ctx.strokeStyle = color;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      roads.forEach((road) => {
-        if (!G.intersects(road.bounds, clipBounds) || road.path.length < 2) return;
-        ctx.lineWidth = viewport.worldLineWidth(Math.max(1.2, road.width * 0.34));
+      features.forEach((feature) => {
+        if (!G.intersects(feature.bounds, clipBounds) || feature.path.length < 2) return;
+        ctx.lineWidth = viewport.worldLineWidth(Math.max(1.2, feature.width * widthScale));
         ctx.beginPath();
-        ctx.moveTo(road.path[0][0], road.path[0][1]);
-        for (let index = 1; index < road.path.length; index += 1) ctx.lineTo(road.path[index][0], road.path[index][1]);
+        ctx.moveTo(feature.path[0][0], feature.path[0][1]);
+        for (let index = 1; index < feature.path.length; index += 1) {
+          ctx.lineTo(feature.path[index][0], feature.path[index][1]);
+        }
         ctx.stroke();
       });
     }

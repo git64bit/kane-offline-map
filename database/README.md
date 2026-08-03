@@ -237,12 +237,12 @@ PYTHONDONTWRITEBYTECODE=1 python3 database/tools/county_db.py build-buildings \
 
 `import-ledger` is also available for an already initialized candidate database. It refuses to import the same release key or archive hash twice.
 
-## Prepared browser core
+## Complete prepared browser bundle
 
-Export the accepted county boundary and buildings without modifying the database:
+Export the accepted county boundary, roads, Fox River, creeks, and buildings without modifying the database:
 
 ```sh
-bash database/export-prepared-core.sh /path/to/kane-county.gpkg /path/to/prepared-core
+bash database/export-prepared-core.sh /path/to/kane-county.gpkg /path/to/prepared-browser-data
 ```
 
-The resulting directory is explicitly incomplete until roads and water are added.
+The resulting directory is complete only when deployment-source validation passes. It contains four browser GeoJSON files plus `core-manifest.json`.

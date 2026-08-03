@@ -1,32 +1,40 @@
-# Portable archive contract
+# Portable application archive
 
-The final USB deliverable is a ZIP containing one new application directory:
+The portable archive is a deterministic ZIP with one root directory:
 
 ```text
-kane-offline-map/
+kane-offline-map.zip
+└── kane-offline-map/
 ```
 
-It is independent of the existing `county-field-map/` application.
+Build directly from the accepted deployment-source GeoPackage:
 
-## Included by the builder
+```sh
+bash deployment/build-deployment-archive.sh \
+  /path/to/kane-county.gpkg \
+  /path/to/kane-offline-map.zip
+```
 
-- browser runtime files;
-- prepared `county_boundary.json`, `roads.json`, `water.json`, and `buildings.json`;
-- writable `project-data/sectors/` location;
-- `PORTABLE_MANIFEST.json` with the exact Git source identity and SHA-256 digest of each payload file;
-- deployment notes and the expected browser URL.
+The pipeline creates a temporary prepared bundle beside the requested ZIP, validates all accepted datasets and output hashes, builds a candidate archive, validates every archived payload, promotes the ZIP, and removes the temporary directory.
 
-## Deliberately external
+The archive contains the browser runtime and complete prepared data:
 
-- `data/reviews/current/`;
-- operating-system-specific TrivialHTTP runtime files.
+```text
+data/kane-county/
+├── core-manifest.json
+├── county_boundary.json
+├── roads.json
+├── water.json
+└── buildings.json
+```
 
-These two items are omitted by contract and are recorded in both the portable manifest and deployment README.
+The archive manifest records the exact source Git commit, every payload path, byte length, and SHA-256. Identical source and accepted database content produce identical prepared files; identical prepared files and source commit produce identical ZIP bytes.
 
-## Candidate promotion
+The archive deliberately excludes two manual additions:
 
-The builder writes a temporary candidate ZIP, reopens it, validates every manifest path, byte length, and SHA-256 digest, and only then replaces the requested output. An existing output is preserved unless `--force` is supplied and the new candidate passes validation.
+```text
+data/reviews/current/
+TrivialHTTP runtime files
+```
 
-## Determinism
-
-All paths are sorted, ZIP timestamps are fixed, permissions are normalized, JSON is canonicalized, and the source commit is explicit. Unchanged inputs produce identical ZIP bytes.
+It also excludes Git metadata, database tooling, tests, harvest files, GeoPackages, and development outputs. Existing ZIP output is refused unless `--force` is supplied; forced replacement occurs only after candidate validation.

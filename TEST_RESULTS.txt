@@ -1,4 +1,4 @@
-Batch 022 local Linux verification
+Batch 023 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
@@ -30,18 +30,23 @@ Batch 022 local Linux verification
 - Browser sector-file byte-length and SHA-256 verification: PASS
 - County, inspection, and practical-cell review overlays: PASS
 - Missing review bundle remains nonfatal: PASS
+- GeoPackage LineString, MultiLineString, Polygon, and MultiPolygon decoding: PASS
+- Complete deterministic boundary/road/water/building browser export: PASS
+- Fox River polygon and creek-line merge with source identity: PASS
+- Browser creek-centerline rendering contract: PASS
+- Complete prepared-manifest validation: PASS
+- Partial and tampered prepared bundle packaging refusal: PASS
 - Deterministic portable ZIP construction: PASS
-- Deterministic accepted boundary/building prepared-core export: PASS
-- Partial prepared directory cannot claim final-bundle completeness: PASS
 - Portable manifest payload hashes and source identity: PASS
 - Review bundle and TrivialHTTP runtime exclusion: PASS
 - Existing archive overwrite refusal: PASS
 - Candidate-safe forced archive replacement: PASS
 - Existing export and bundle overwrite refusal: PASS
-- Authoritative database byte preservation: PASS
+- Deployment-source database byte preservation: PASS
 - Candidate failure preserves accepted outputs: PASS
+- Direct GeoPackage-to-deployment-ZIP pipeline contract: PASS
 - Source script 500-line cap: PASS
-- Database, browser-contract, harvest, acceptance, and packaging tests: 118 passed
+- Database, browser-contract, harvest, acceptance, export, and packaging tests: 124 passed
 - Live ArcGIS network access: not performed and not required
 - TrivialHTTP compilation: not performed and not required
-- Authoritative road and water data, generated GeoPackages, generated review outputs, completed prepared bundles, and final portable ZIP: not bundled
+- Live accepted GeoPackage, generated prepared bundle, and final portable ZIP: not bundled

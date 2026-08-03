@@ -30,6 +30,7 @@ class BrowserReviewContractTests(unittest.TestCase):
         cls.loader = (ROOT / "src" / "reviewBundleLoader.js").read_text(encoding="utf-8")
         cls.overlay = (ROOT / "src" / "reviewOverlay.js").read_text(encoding="utf-8")
         cls.renderer = (ROOT / "src" / "renderer.js").read_text(encoding="utf-8")
+        cls.data_loader = (ROOT / "src" / "dataLoader.js").read_text(encoding="utf-8")
         cls.config = (ROOT / "portable_config.js").read_text(encoding="utf-8")
 
     def test_review_scripts_load_before_renderer_and_application(self) -> None:
@@ -83,6 +84,12 @@ class BrowserReviewContractTests(unittest.TestCase):
         self.assertNotIn("classification_review", self.app)
         self.assertNotIn("fetch(\"/__", self.loader)
         self.assertIn("Orange outlines are read-only", self.app)
+
+    def test_linear_water_is_loaded_and_drawn_separately(self) -> None:
+        self.assertIn("waterLines: convertLines", self.data_loader)
+        self.assertIn("sectorData.waterLines", self.renderer)
+        self.assertIn("drawPaths(ctx, sectorData.waterLines", self.renderer)
+        self.assertIn("COLORS.water", self.renderer)
 
     def test_script_line_count_contract(self) -> None:
         scripts = sorted((ROOT / "src").glob("*.js"))

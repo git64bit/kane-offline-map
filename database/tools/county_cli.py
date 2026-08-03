@@ -153,7 +153,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     command = commands.add_parser(
         "export-prepared-core",
-        help="Export accepted boundary and buildings as deterministic browser GeoJSON.",
+        help="Export the complete accepted browser-data bundle.",
     )
     command.add_argument("database", type=Path)
     command.add_argument("--output", type=Path, required=True)

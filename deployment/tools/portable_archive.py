@@ -17,12 +17,20 @@ ARCHIVE_ROOT = "kane-offline-map"
 SCHEMA = "kane-offline-map-portable-archive"
 SCHEMA_VERSION = 1
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
+PREPARED_MANIFEST = "core-manifest.json"
 REQUIRED_PREPARED = (
     "county_boundary.json",
     "roads.json",
     "water.json",
     "buildings.json",
+    PREPARED_MANIFEST,
 )
+PREPARED_DATASETS = {
+    "county_boundary": "county_boundary.json",
+    "roads": "roads.json",
+    "water": "water.json",
+    "buildings": "buildings.json",
+}
 TRACKED_RUNTIME = (
     "index.html",
     "portable_config.js",
@@ -106,20 +114,48 @@ def validate_regular_file(path: Path, label: str) -> None:
 def validate_prepared_data(directory: Path) -> dict[str, dict[str, object]]:
     if not directory.is_dir() or directory.is_symlink():
         raise ArchiveError(f"Prepared data directory is unavailable: {directory}")
-    records: dict[str, dict[str, object]] = {}
     for name in REQUIRED_PREPARED:
+        validate_regular_file(directory / name, "Prepared data file")
+    manifest_path = directory / PREPARED_MANIFEST
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ArchiveError("Prepared browser manifest is invalid.") from error
+    if manifest.get("schema") != "kane-offline-map-prepared-core":
+        raise ArchiveError("Prepared browser manifest schema is invalid.")
+    if manifest.get("schema_version") != 2:
+        raise ArchiveError("Prepared browser manifest version is invalid.")
+    if manifest.get("complete_browser_bundle") is not True:
+        raise ArchiveError("Prepared browser bundle is not marked complete.")
+    if manifest.get("remaining_datasets") != []:
+        raise ArchiveError("Prepared browser bundle still lists remaining datasets.")
+    datasets = manifest.get("datasets")
+    if not isinstance(datasets, dict) or set(datasets) != set(PREPARED_DATASETS):
+        raise ArchiveError("Prepared browser dataset registry is invalid.")
+    records: dict[str, dict[str, object]] = {}
+    for key, name in PREPARED_DATASETS.items():
         path = directory / name
-        validate_regular_file(path, "Prepared data file")
         with path.open("rb") as stream:
             prefix = stream.read(4096).lstrip()
-        if not prefix.startswith((b"{", b"[")):
+        if not prefix.startswith(b"{"):
             raise ArchiveError(f"Prepared data file is not JSON: {path}")
-        records[name] = {
-            "byte_length": path.stat().st_size,
-            "sha256": sha256_path(path),
-        }
+        record = datasets[key]
+        if not isinstance(record, dict) or record.get("relative_path") != name:
+            raise ArchiveError(f"Prepared manifest record is invalid: {name}")
+        byte_length = path.stat().st_size
+        sha256 = sha256_path(path)
+        if record.get("byte_length") != byte_length:
+            raise ArchiveError(f"Prepared data byte length mismatch: {name}")
+        if record.get("sha256") != sha256:
+            raise ArchiveError(f"Prepared data hash mismatch: {name}")
+        if not isinstance(record.get("feature_count"), int) or record["feature_count"] <= 0:
+            raise ArchiveError(f"Prepared data feature count is invalid: {name}")
+        records[name] = {"byte_length": byte_length, "sha256": sha256}
+    records[PREPARED_MANIFEST] = {
+        "byte_length": manifest_path.stat().st_size,
+        "sha256": sha256_path(manifest_path),
+    }
     return records
-
 
 def git_source_commit(root: Path) -> str:
     try:
@@ -286,7 +322,7 @@ def build_archive(root: Path, prepared: Path, output: Path, source_commit: str, 
 
 def parse_arguments(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build the Kane Offline Map portable application ZIP.")
-    parser.add_argument("prepared_data", type=Path, help="Folder containing the four prepared browser GeoJSON files.")
+    parser.add_argument("prepared_data", type=Path, help="Folder containing the complete prepared browser bundle.")
     parser.add_argument("output", type=Path, help="Destination ZIP path.")
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--source-commit", help="Explicit 40-character source commit identity.")

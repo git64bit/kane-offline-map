@@ -29,8 +29,41 @@ class PortableArchiveTests(unittest.TestCase):
             "water.json": {"type": "FeatureCollection", "features": []},
             "buildings.json": {"type": "FeatureCollection", "features": []},
         }
+        datasets = {}
+        keys = {
+            "county_boundary.json": "county_boundary",
+            "roads.json": "roads",
+            "water.json": "water",
+            "buildings.json": "buildings",
+        }
         for name, value in fixtures.items():
-            (self.prepared / name).write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
+            path = self.prepared / name
+            path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
+            content = path.read_bytes()
+            datasets[keys[name]] = {
+                "relative_path": name,
+                "feature_count": 1,
+                "byte_length": len(content),
+                "sha256": hashlib.sha256(content).hexdigest(),
+                "releases": [{
+                    "dataset_key": keys[name],
+                    "release_key": f"fixture-{keys[name]}",
+                    "content_sha256": "0" * 64,
+                }],
+            }
+        manifest = {
+            "schema": "kane-offline-map-prepared-core",
+            "schema_version": 2,
+            "project": "kane-offline-map",
+            "source_database": {"byte_length": 1, "sha256": "1" * 64},
+            "datasets": datasets,
+            "complete_browser_bundle": True,
+            "remaining_datasets": [],
+        }
+        (self.prepared / "core-manifest.json").write_text(
+            json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
@@ -68,7 +101,10 @@ class PortableArchiveTests(unittest.TestCase):
     def test_prepared_data_is_copied_exactly(self) -> None:
         output, result = self.build()
         with zipfile.ZipFile(output) as archive:
-            for name in ("county_boundary.json", "roads.json", "water.json", "buildings.json"):
+            for name in (
+                "county_boundary.json", "roads.json", "water.json",
+                "buildings.json", "core-manifest.json",
+            ):
                 expected = (self.prepared / name).read_bytes()
                 actual = archive.read(f"kane-offline-map/data/kane-county/{name}")
                 self.assertEqual(expected, actual)
@@ -80,6 +116,21 @@ class PortableArchiveTests(unittest.TestCase):
         with self.assertRaises(ArchiveError):
             build_archive(ROOT, self.prepared, output, SOURCE_COMMIT)
         self.assertFalse(output.exists())
+
+    def test_partial_prepared_manifest_is_rejected(self) -> None:
+        manifest_path = self.prepared / "core-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["complete_browser_bundle"] = False
+        manifest["remaining_datasets"] = ["water"]
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaisesRegex(ArchiveError, "not marked complete"):
+            build_archive(ROOT, self.prepared, self.temp / "partial.zip", SOURCE_COMMIT)
+
+    def test_prepared_manifest_hash_mismatch_is_rejected(self) -> None:
+        with (self.prepared / "roads.json").open("ab") as stream:
+            stream.write(b" ")
+        with self.assertRaisesRegex(ArchiveError, "mismatch"):
+            build_archive(ROOT, self.prepared, self.temp / "tampered.zip", SOURCE_COMMIT)
 
     def test_existing_output_is_preserved_without_force(self) -> None:
         output = self.temp / "existing.zip"
@@ -98,8 +149,11 @@ class PortableArchiveTests(unittest.TestCase):
 
     def test_shell_entrypoint_and_manual_addition_contract(self) -> None:
         script = (ROOT / "deployment" / "build-portable-archive.sh").read_text(encoding="utf-8")
+        pipeline = (ROOT / "deployment" / "build-deployment-archive.sh").read_text(encoding="utf-8")
         readme = (ROOT / "deployment" / "USB_DEPLOYMENT_README.txt").read_text(encoding="utf-8")
         self.assertIn("portable_archive.py", script)
+        self.assertIn("export-prepared-core", pipeline)
+        self.assertIn("portable_archive.py", pipeline)
         self.assertIn("data/reviews/current", readme)
         self.assertIn("TrivialHTTP runtime files", readme)
         self.assertLessEqual(len((ROOT / "deployment" / "tools" / "portable_archive.py").read_text().splitlines()), 500)

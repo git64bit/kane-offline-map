@@ -1,25 +1,33 @@
-# Prepared core export
+# Complete prepared browser bundle
 
-The authoritative GeoPackage now supplies the two accepted polygon datasets needed by the browser:
+Batch 023 exports the complete accepted browser-data bundle directly from the deployment-source GeoPackage. The database must contain accepted classification, buildings, county boundary, roads, Fox River, and creeks.
 
-- `county_boundary.json`
-- `buildings.json`
-
-Create the deterministic partial browser-data directory with:
+Create the deterministic directory with:
 
 ```sh
 bash database/export-prepared-core.sh \
   /path/to/kane-county.gpkg \
-  /path/to/prepared-core
+  /path/to/prepared-browser-data
 ```
 
-The directory also contains `core-manifest.json`, recording the exact accepted release keys, source content hashes, output hashes, feature counts, and source-database hash.
-
-This is not yet a deployable browser bundle. The manifest explicitly records:
+The output contains:
 
 ```text
-complete_browser_bundle: false
-remaining_datasets: roads, water
+prepared-browser-data/
+├── core-manifest.json
+├── county_boundary.json
+├── roads.json
+├── water.json
+└── buildings.json
 ```
 
-The portable ZIP builder must not be pointed at this partial directory. A later bounded batch will add authoritative roads and water and promote the four-file prepared bundle.
+`water.json` combines accepted Fox River polygons and creek centerlines while retaining each feature's source dataset identity. Road attributes are preserved for browser styling. Every geometry is decoded from the accepted GeoPackage rather than copied from a harvest file.
+
+The canonical manifest records the authoritative database SHA-256 and byte length, accepted release identities, source-content hashes, output hashes, output byte lengths, and feature counts. A valid export records:
+
+```text
+complete_browser_bundle: true
+remaining_datasets: []
+```
+
+The export is candidate-built and validated before promotion. Existing output is refused unless `--force` is supplied, and the authoritative GeoPackage is opened read-only and remains byte-for-byte unchanged.

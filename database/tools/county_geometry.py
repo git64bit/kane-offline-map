@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Pure-Python Polygon and MultiPolygon decoding and rectangle intersection."""
+"""Pure-Python GeoPackage geometry decoding and rectangle intersection."""
 
 from __future__ import annotations
 
 import struct
+from typing import Any
+
 
 class WkbReader:
     def __init__(self, data: bytes):
@@ -13,7 +15,7 @@ class WkbReader:
     def take(self, length: int) -> bytes:
         end = self.offset + length
         if end > len(self.data):
-            raise RuntimeError("Building geometry WKB is truncated.")
+            raise RuntimeError("GeoPackage geometry WKB is truncated.")
         value = self.data[self.offset:end]
         self.offset = end
         return value
@@ -25,46 +27,92 @@ class WkbReader:
         return struct.unpack(endian + "dd", self.take(16))
 
 
-def read_polygon(reader: WkbReader, nested: bool = False) -> list[list[tuple[float, float]]]:
+def geometry_header(reader: WkbReader) -> tuple[str, int]:
     order = reader.take(1)[0]
     if order not in (0, 1):
-        raise RuntimeError("Building geometry WKB has an invalid byte order.")
+        raise RuntimeError("GeoPackage geometry WKB has an invalid byte order.")
     endian = "<" if order == 1 else ">"
-    geometry_type = reader.uint32(endian)
+    return endian, reader.uint32(endian)
+
+
+def read_line(reader: WkbReader, nested: bool = False) -> list[tuple[float, float]]:
+    endian, geometry_type = geometry_header(reader)
+    if geometry_type != 2:
+        label = "nested " if nested else ""
+        raise RuntimeError(f"GeoPackage geometry WKB {label}type is not LineString.")
+    points = [reader.point(endian) for _ in range(reader.uint32(endian))]
+    if len(points) < 2:
+        raise RuntimeError("GeoPackage LineString contains fewer than two points.")
+    return points
+
+
+def read_polygon(reader: WkbReader, nested: bool = False) -> list[list[tuple[float, float]]]:
+    endian, geometry_type = geometry_header(reader)
     if geometry_type != 3:
         label = "nested " if nested else ""
-        raise RuntimeError(f"Building geometry WKB {label}type is not Polygon.")
+        raise RuntimeError(f"GeoPackage geometry WKB {label}type is not Polygon.")
     rings: list[list[tuple[float, float]]] = []
     for _ in range(reader.uint32(endian)):
-        rings.append([reader.point(endian) for _ in range(reader.uint32(endian))])
+        ring = [reader.point(endian) for _ in range(reader.uint32(endian))]
+        if len(ring) < 4:
+            raise RuntimeError("GeoPackage Polygon ring contains fewer than four points.")
+        rings.append(ring)
+    if not rings:
+        raise RuntimeError("GeoPackage Polygon contains no rings.")
     return rings
 
 
-def decode_geometry(blob: bytes) -> list[list[list[tuple[float, float]]]]:
-    if len(blob) < 45 or blob[:2] != b"GP":
-        raise RuntimeError("Building geometry has an invalid GeoPackage header.")
+def geopackage_wkb(blob: bytes) -> bytes:
+    if len(blob) < 9 or blob[:2] != b"GP":
+        raise RuntimeError("Geometry has an invalid GeoPackage header.")
     flags = blob[3]
     envelope_code = (flags >> 1) & 0b111
     envelope_lengths = {0: 0, 1: 32, 2: 48, 3: 48, 4: 64}
     if envelope_code not in envelope_lengths:
-        raise RuntimeError("Building geometry has an unsupported GeoPackage envelope.")
+        raise RuntimeError("Geometry has an unsupported GeoPackage envelope.")
     header_length = 8 + envelope_lengths[envelope_code]
-    reader = WkbReader(blob[header_length:])
-    order = reader.take(1)[0]
-    if order not in (0, 1):
-        raise RuntimeError("Building geometry WKB has an invalid byte order.")
-    endian = "<" if order == 1 else ">"
-    geometry_type = reader.uint32(endian)
-    if geometry_type == 3:
-        reader.offset = 0
-        polygons = [read_polygon(reader)]
+    if len(blob) <= header_length:
+        raise RuntimeError("Geometry GeoPackage payload is missing.")
+    return blob[header_length:]
+
+
+def decode_geojson_geometry(blob: bytes) -> tuple[str, Any]:
+    reader = WkbReader(geopackage_wkb(blob))
+    start = reader.offset
+    endian, geometry_type = geometry_header(reader)
+    reader.offset = start
+    if geometry_type == 2:
+        value: Any = read_line(reader)
+        name = "LineString"
+    elif geometry_type == 3:
+        value = read_polygon(reader)
+        name = "Polygon"
+    elif geometry_type == 5:
+        geometry_header(reader)
+        value = [read_line(reader, nested=True) for _ in range(reader.uint32(endian))]
+        if not value:
+            raise RuntimeError("GeoPackage MultiLineString contains no lines.")
+        name = "MultiLineString"
     elif geometry_type == 6:
-        polygons = [read_polygon(reader, nested=True) for _ in range(reader.uint32(endian))]
+        geometry_header(reader)
+        value = [read_polygon(reader, nested=True) for _ in range(reader.uint32(endian))]
+        if not value:
+            raise RuntimeError("GeoPackage MultiPolygon contains no polygons.")
+        name = "MultiPolygon"
     else:
-        raise RuntimeError("Building geometry WKB is not Polygon or MultiPolygon.")
+        raise RuntimeError(f"Unsupported GeoPackage WKB geometry type: {geometry_type}.")
     if reader.offset != len(reader.data):
-        raise RuntimeError("Building geometry WKB has trailing bytes.")
-    return polygons
+        raise RuntimeError("GeoPackage geometry WKB has trailing bytes.")
+    return name, value
+
+
+def decode_geometry(blob: bytes) -> list[list[list[tuple[float, float]]]]:
+    geometry_type, coordinates = decode_geojson_geometry(blob)
+    if geometry_type == "Polygon":
+        return [coordinates]
+    if geometry_type == "MultiPolygon":
+        return coordinates
+    raise RuntimeError("Geometry WKB is not Polygon or MultiPolygon.")
 
 
 def point_on_segment(point: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> bool:

@@ -88,4 +88,4 @@ The output and manifest are promoted only after the complete candidate succeeds.
 
 ## Deliberate limits
 
-Batch 020 establishes authoritative acquisition contracts for roads and water but does not accept them into SQL or merge the Fox River and creek releases into the browser `water.json` file. Those steps remain candidate-built and separate from live harvesting.
+Live harvesting remains separate from SQL acceptance and deployment export. After validated releases are accepted into the GeoPackage, Batch 023 deterministically merges Fox River polygons and creek centerlines into browser `water.json` while preserving their distinct source release identities.

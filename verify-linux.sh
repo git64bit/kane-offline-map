@@ -93,6 +93,7 @@ docs/REVIEW_BROWSER.md
 docs/PORTABLE_ARCHIVE.md
 data/reviews/README.txt
 deployment/build-portable-archive.sh
+deployment/build-deployment-archive.sh
 deployment/tools/portable_archive.py
 deployment/README.md
 deployment/USB_DEPLOYMENT_README.txt
@@ -157,7 +158,7 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The official building, boundary, road, Fox River, and creek harvest and SQL-acceptance contracts, plus review-export, sector-bundle, browser-review, portable-archive, and prepared-core contracts, were validated offline; no live source was contacted.'
+printf '%s\n' 'The official building, boundary, road, Fox River, and creek harvest and SQL-acceptance contracts, plus review-export, sector-bundle, browser-review, complete prepared-bundle, and deployment-archive contracts, were validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'
-printf '%s\n' 'Road missing-geometry exclusion and road/water SQL acceptance were validated with synthetic harvest pairs; live harvesting, live acceptance, prepared-bundle completion, and the final deployment ZIP remain pending.'
+printf '%s\n' 'Road missing-geometry exclusion, road/water SQL acceptance, complete prepared-bundle export, and deployment-archive construction were validated with synthetic accepted data; no final live deployment ZIP was produced.'

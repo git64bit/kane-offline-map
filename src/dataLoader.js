@@ -62,10 +62,12 @@
         fetchJson(join(bundleRoot, "water.json")),
         fetchJson(join(bundleRoot, "buildings.json"))
       ]);
+      const waterFeatures = featureArray(waterJson);
       const nextData = {
         sector,
         roads: convertRoads(featureArray(roadsJson), rawSectorBounds),
-        water: convertAreas(featureArray(waterJson), rawSectorBounds, "water"),
+        water: convertAreas(waterFeatures, rawSectorBounds, "water"),
+        waterLines: convertLines(waterFeatures, rawSectorBounds, "water", 4),
         buildings: convertAreas(featureArray(buildingsJson), rawSectorBounds, "building")
       };
       if (generation === loadGeneration) {
@@ -82,6 +84,10 @@
     }
 
     function convertRoads(features, wantedBounds) {
+      return convertLines(features, wantedBounds, "road", null);
+    }
+
+    function convertLines(features, wantedBounds, kind, fixedWidth) {
       const output = [];
       features.forEach((feature, featureIndex) => {
         const rawBounds = boundsForFeature(feature);
@@ -91,8 +97,8 @@
           if (projected.length < 2) return;
           const props = feature.properties || {};
           output.push({
-            id: String(feature.id || props.id || `road-${featureIndex + 1}-${pathIndex + 1}`),
-            width: roadWidth(props),
+            id: String(feature.id || props.id || `${kind}-${featureIndex + 1}-${pathIndex + 1}`),
+            width: fixedWidth === null ? roadWidth(props) : fixedWidth,
             path: projected,
             bounds: boundsForPoints(projected)
           });
@@ -273,7 +279,7 @@
   }
 
   function emptySectorData() {
-    return { sector: null, roads: [], water: [], buildings: [] };
+    return { sector: null, roads: [], water: [], waterLines: [], buildings: [] };
   }
 
   CFM.createDataLoader = createDataLoader;
