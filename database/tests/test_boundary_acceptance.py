@@ -202,9 +202,9 @@ class BoundaryAcceptanceTests(unittest.TestCase):
             migrations = connection.execute("SELECT COUNT(*) FROM schema_migration").fetchone()[0]
         finally:
             connection.close()
-        self.assertEqual(10700, version)
+        self.assertEqual(10800, version)
         self.assertEqual(4326, srs)
-        self.assertEqual(8, migrations)
+        self.assertEqual(9, migrations)
 
 
 if __name__ == "__main__":

@@ -44,6 +44,8 @@ database/build-kane-harvest-database.sh
 database/refresh-kane-harvest-database.sh
 database/validate-source-profile.sh
 database/accept-kane-boundary.sh
+database/accept-kane-map-layers.sh
+database/validate-deployment-database.sh
 database/validate-authoritative-database.sh
 database/export-open-reviews.sh
 database/export-open-review-bundle.sh
@@ -52,6 +54,7 @@ database/migrations/0005_source_buildings.sql
 database/migrations/0006_building_refresh.sql
 database/migrations/0007_spatial_cell_index.sql
 database/migrations/0008_county_boundary.sql
+database/migrations/0009_map_layers.sql
 database/calibrate-spatial-database.sh
 database/refresh-building-database.sh
 database/tools/county_db.py
@@ -65,6 +68,7 @@ database/tools/county_harvest.py
 database/tools/county_buildings.py
 database/tools/county_building_refresh.py
 database/tools/county_ledger.py
+database/tools/county_map_layers.py
 database/tools/county_review_export.py
 database/tools/county_review_bundle.py
 database/tools/county_prepared.py
@@ -76,6 +80,7 @@ database/tests/test_arcgis.py
 database/tests/test_harvest_acceptance.py
 database/tests/test_boundary_harvest.py
 database/tests/test_linear_harvest.py
+database/tests/test_map_layers.py
 database/tests/test_boundary_acceptance.py
 database/tests/test_review_export.py
 database/tests/test_review_bundle.py
@@ -96,7 +101,8 @@ deployment/TRIVIALHTTP_RUNTIME_README.txt
 deployment/SECTOR_STORAGE_README.txt
 database/tests/test_portable_archive.py
 database/tests/test_prepared_core.py
-docs/PREPARED_CORE_EXPORT.md'
+docs/PREPARED_CORE_EXPORT.md
+docs/MAP_LAYER_ACCEPTANCE.md'
 
 printf '%s\n' 'Checking tracked source checksums...'
 sha256sum -c CHECKSUMS.sha256
@@ -151,7 +157,7 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The official building, boundary, road, Fox River, and creek harvest contracts and the SQL-acceptance, review-export, sector-bundle, browser-review, portable-archive, and prepared-core contracts were validated offline; no live source was contacted.'
+printf '%s\n' 'The official building, boundary, road, Fox River, and creek harvest and SQL-acceptance contracts, plus review-export, sector-bundle, browser-review, portable-archive, and prepared-core contracts, were validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'
-printf '%s\n' 'The road and water source profiles were validated offline; live harvesting, SQL acceptance, prepared-bundle completion, and the final deployment ZIP remain pending.'
+printf '%s\n' 'Road and water SQL acceptance was validated with synthetic harvest pairs; live harvesting, live acceptance, prepared-bundle completion, and the final deployment ZIP remain pending.'

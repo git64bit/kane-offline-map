@@ -20,11 +20,12 @@ import county_boundary
 import county_buildings
 import county_building_refresh
 import county_ledger
+import county_map_layers
 import county_spatial
 
 APP_ID = 0x47504B47
-USER_VERSION = 10700
-TOOL_VERSION = "batch-014.0"
+USER_VERSION = 10800
+TOOL_VERSION = "batch-021.0"
 REQUIRED_TABLES = {
     "schema_migration",
     "gpkg_spatial_ref_sys",
@@ -46,6 +47,7 @@ REQUIRED_TABLES = {
     "release_promotion",
     "source_building",
     "source_county_boundary",
+    "source_map_feature",
     "building_release_comparison",
     "building_feature_change",
     "classification_grid_calibration",
@@ -279,6 +281,7 @@ def validate_database(path: Path) -> list[str]:
             errors.extend(county_building_refresh.building_errors(connection, require_accepted=False))
             errors.extend(county_spatial.spatial_errors(connection, require_calibrated=False))
             errors.extend(county_boundary.boundary_errors(connection, require_accepted=False))
+            errors.extend(county_map_layers.map_layer_errors(connection, require_accepted=False))
 
         srs_ids = {
             row[0] for row in connection.execute(
@@ -360,6 +363,20 @@ def validate_authoritative_database(path: Path) -> list[str]:
     return errors
 
 
+def validate_deployment_database(path: Path) -> list[str]:
+    errors = validate_authoritative_database(path)
+    if errors or not path.is_file():
+        return errors
+    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        errors.extend(county_map_layers.map_layer_errors(connection, require_accepted=True))
+    except sqlite3.Error as exc:
+        errors.append(f"Road-and-water validation error: {exc}")
+    finally:
+        connection.close()
+    return errors
+
+
 def database_info(path: Path) -> dict[str, object]:
     errors = validate_database(path)
     if errors:
@@ -400,6 +417,7 @@ def database_info(path: Path) -> dict[str, object]:
             **county_building_refresh.building_info(path),
             **county_spatial.spatial_info(path),
             **county_boundary.boundary_info(path),
+            **county_map_layers.map_layer_info(path),
         }
     finally:
         connection.close()

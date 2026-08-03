@@ -211,8 +211,8 @@ class BuildingRefreshTests(unittest.TestCase):
         refresh(database)
         connection = sqlite3.connect(database)
         try:
-            self.assertEqual(8, connection.execute("SELECT COUNT(*) FROM schema_migration").fetchone()[0])
-            self.assertEqual(10700, connection.execute("PRAGMA user_version").fetchone()[0])
+            self.assertEqual(9, connection.execute("SELECT COUNT(*) FROM schema_migration").fetchone()[0])
+            self.assertEqual(10800, connection.execute("PRAGMA user_version").fetchone()[0])
         finally:
             connection.close()
         self.assertEqual([], county_db.validate_building_database(database))

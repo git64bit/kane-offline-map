@@ -1,4 +1,4 @@
-Batch 020 local Linux verification
+Batch 021 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
@@ -9,9 +9,14 @@ Batch 020 local Linux verification
 - Official Kane County creek source profile offline validation: PASS
 - Polygon and polyline ArcGIS geometry contracts: PASS
 - Degenerate and mismatched geometry rejection: PASS
-- Immutable building and boundary harvest-pair validation: PASS
+- Immutable building, boundary, road, and water harvest-pair validation: PASS
 - Native GeoPackage county-boundary feature table: PASS
-- Boundary source-file provenance preservation: PASS
+- Native GeoPackage road-and-water feature table: PASS
+- Atomic road, Fox River, and creek candidate acceptance: PASS
+- Exact road-and-water source-file provenance preservation: PASS
+- Road-and-water geometry and content tampering detection: PASS
+- Failed or repeated map-layer acceptance preserves the accepted database: PASS
+- Deployment-source database validation: PASS
 - Boundary-release-to-grid-calibration linkage: PASS
 - Accepted ledger and building fixture candidate: PASS
 - Exact building-to-practical-cell indexing: PASS
@@ -34,7 +39,7 @@ Batch 020 local Linux verification
 - Authoritative database byte preservation: PASS
 - Candidate failure preserves accepted outputs: PASS
 - Source script 500-line cap: PASS
-- Database, browser-contract, harvest, and packaging tests: 104 passed
+- Database, browser-contract, harvest, acceptance, and packaging tests: 112 passed
 - Live ArcGIS network access: not performed and not required
 - TrivialHTTP compilation: not performed and not required
 - Authoritative road and water data, generated GeoPackages, generated review outputs, completed prepared bundles, and final portable ZIP: not bundled

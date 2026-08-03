@@ -15,6 +15,7 @@ import county_building_refresh
 import county_harvest
 import county_db
 import county_ledger
+import county_map_layers
 import county_prepared
 import county_review_bundle
 import county_review_export
@@ -120,6 +121,21 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--manifest", type=Path)
 
     command = commands.add_parser(
+        "accept-harvested-map-layers",
+        help="Atomically accept validated road, Fox River, and creek harvests.",
+    )
+    command.add_argument("database", type=Path)
+    command.add_argument("--road-profile", type=Path, required=True)
+    command.add_argument("--roads", type=Path, required=True)
+    command.add_argument("--road-manifest", type=Path)
+    command.add_argument("--river-profile", type=Path, required=True)
+    command.add_argument("--fox-river", type=Path, required=True)
+    command.add_argument("--river-manifest", type=Path)
+    command.add_argument("--creek-profile", type=Path, required=True)
+    command.add_argument("--creeks", type=Path, required=True)
+    command.add_argument("--creek-manifest", type=Path)
+
+    command = commands.add_parser(
         "export-open-reviews",
         help="Export open building-triggered review cells as canonical GeoJSON.",
     )
@@ -156,6 +172,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("validate-buildings", "Require and validate one accepted building release."),
         ("validate-spatial", "Require and validate grid calibration and building-cell relations."),
         ("validate-authoritative", "Require authoritative boundary acceptance and spatial index."),
+        ("validate-deployment", "Require accepted boundary, buildings, roads, and water."),
         ("info", "Print database metadata as JSON."),
     ):
         command = commands.add_parser(name, help=help_text)
@@ -245,6 +262,15 @@ def main() -> int:
             info = county_boundary.accept_harvested_boundary(
                 args.database, args.profile, args.geojson, args.manifest
             )
+        elif args.command == "accept-harvested-map-layers":
+            info = county_map_layers.accept_harvested_map_layers(
+                args.database,
+                [
+                    (args.road_profile, args.roads, args.road_manifest),
+                    (args.river_profile, args.fox_river, args.river_manifest),
+                    (args.creek_profile, args.creeks, args.creek_manifest),
+                ],
+            )
         elif args.command == "export-open-reviews":
             info = county_review_export.export_open_reviews(
                 args.database, args.output, args.force
@@ -290,6 +316,12 @@ def main() -> int:
                 county_db.validate_authoritative_database(args.database),
                 args.database,
                 "authoritative county database",
+            )
+        elif args.command == "validate-deployment":
+            return print_validation(
+                county_db.validate_deployment_database(args.database),
+                args.database,
+                "deployment source database",
             )
         elif args.command == "info":
             info = county_db.database_info(args.database)

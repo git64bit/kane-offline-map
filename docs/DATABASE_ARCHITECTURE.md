@@ -37,7 +37,7 @@ Batch 006 imports the completed field ledger as the first accepted classificatio
 
 ### Source geometry
 
-Batch 008 adds `source_building` as the first native GeoPackage feature table. Each immutable building release preserves source identity, attributes, Polygon or MultiPolygon geometry, content hashes, bounds, and source-file provenance. Batch 014 adds `source_county_boundary` for the single accepted authoritative county geometry and its harvest provenance. Future migrations will add roads, water, parcels, and addresses.
+Batch 008 adds `source_building` as the first native GeoPackage feature table. Each immutable building release preserves source identity, attributes, Polygon or MultiPolygon geometry, content hashes, bounds, and source-file provenance. Batch 014 adds `source_county_boundary` for the single accepted authoritative county geometry and its harvest provenance. Batch 021 adds `source_map_feature` for accepted road-centerline, Fox River, and creek releases, supporting LineString, MultiLineString, Polygon, and MultiPolygon geometry. Future migrations may add parcels and addresses.
 
 ### Derived data
 
