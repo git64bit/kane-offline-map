@@ -38,6 +38,7 @@ database/accept-kane-boundary.sh
 database/validate-authoritative-database.sh
 database/export-open-reviews.sh
 database/export-open-review-bundle.sh
+database/export-prepared-core.sh
 database/migrations/0005_source_buildings.sql
 database/migrations/0006_building_refresh.sql
 database/migrations/0007_spatial_cell_index.sql
@@ -56,6 +57,7 @@ database/tools/county_building_refresh.py
 database/tools/county_ledger.py
 database/tools/county_review_export.py
 database/tools/county_review_bundle.py
+database/tools/county_prepared.py
 database/tools/county_spatial.py
 database/tests/test_database.py
 database/tests/test_buildings.py
@@ -81,7 +83,9 @@ deployment/USB_DEPLOYMENT_README.txt
 deployment/START-URL.txt
 deployment/TRIVIALHTTP_RUNTIME_README.txt
 deployment/SECTOR_STORAGE_README.txt
-database/tests/test_portable_archive.py'
+database/tests/test_portable_archive.py
+database/tests/test_prepared_core.py
+docs/PREPARED_CORE_EXPORT.md'
 
 printf '%s\n' 'Checking tracked source checksums...'
 sha256sum -c CHECKSUMS.sha256
@@ -136,7 +140,7 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, review-export, sector-bundle, browser-review, and portable-archive contracts were validated offline; no live source was contacted.'
+printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, review-export, sector-bundle, browser-review, portable-archive, and prepared-core contracts were validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'
-printf '%s\n' 'The portable archive builder was validated with synthetic prepared data; no final deployment ZIP was produced.'
+printf '%s\n' 'The prepared-core exporter was validated with synthetic accepted data; roads, water, and the final deployment ZIP remain pending.'

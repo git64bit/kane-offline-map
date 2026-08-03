@@ -15,6 +15,7 @@ import county_building_refresh
 import county_harvest
 import county_db
 import county_ledger
+import county_prepared
 import county_review_bundle
 import county_review_export
 import county_spatial
@@ -135,6 +136,14 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--force", action="store_true")
 
     command = commands.add_parser(
+        "export-prepared-core",
+        help="Export accepted boundary and buildings as deterministic browser GeoJSON.",
+    )
+    command.add_argument("database", type=Path)
+    command.add_argument("--output", type=Path, required=True)
+    command.add_argument("--force", action="store_true")
+
+    command = commands.add_parser(
         "import-ledger", help="Import the completed field ledger into an existing candidate."
     )
     command.add_argument("database", type=Path)
@@ -242,6 +251,10 @@ def main() -> int:
             )
         elif args.command == "export-open-review-bundle":
             info = county_review_bundle.export_open_review_bundle(
+                args.database, args.output, args.force
+            )
+        elif args.command == "export-prepared-core":
+            info = county_prepared.export_prepared_core(
                 args.database, args.output, args.force
             )
         elif args.command == "import-ledger":
