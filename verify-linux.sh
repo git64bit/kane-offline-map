@@ -27,10 +27,19 @@ database/fixtures/buildings-refresh-v2.geojson
 database/fixtures/county-boundary-sample.geojson
 database/sources/kane-county-buildings.json
 database/sources/kane-county-boundary.json
+database/sources/kane-county-roads.json
+database/sources/kane-county-fox-river.json
+database/sources/kane-county-creeks.json
 database/harvest-kane-buildings.sh
 database/harvest-kane-boundary.sh
+database/harvest-kane-roads.sh
+database/harvest-kane-fox-river.sh
+database/harvest-kane-creeks.sh
 database/validate-kane-building-harvest.sh
 database/validate-kane-boundary-harvest.sh
+database/validate-kane-road-harvest.sh
+database/validate-kane-fox-river-harvest.sh
+database/validate-kane-creek-harvest.sh
 database/build-kane-harvest-database.sh
 database/refresh-kane-harvest-database.sh
 database/validate-source-profile.sh
@@ -50,6 +59,7 @@ database/tools/county_boundary.py
 database/tools/county_cli.py
 database/tools/county_arcgis.py
 database/tools/county_geometry.py
+database/tools/county_geojson.py
 database/tools/county_grid.py
 database/tools/county_harvest.py
 database/tools/county_buildings.py
@@ -65,6 +75,7 @@ database/tests/test_spatial.py
 database/tests/test_arcgis.py
 database/tests/test_harvest_acceptance.py
 database/tests/test_boundary_harvest.py
+database/tests/test_linear_harvest.py
 database/tests/test_boundary_acceptance.py
 database/tests/test_review_export.py
 database/tests/test_review_bundle.py
@@ -140,7 +151,7 @@ printf '%s\n' 'Running database tests...'
 bash database/run-tests.sh
 
 printf '%s\n' 'Complete Linux database verification passed.'
-printf '%s\n' 'The official building and boundary harvest, SQL-acceptance, review-export, sector-bundle, browser-review, portable-archive, and prepared-core contracts were validated offline; no live source was contacted.'
+printf '%s\n' 'The official building, boundary, road, Fox River, and creek harvest contracts and the SQL-acceptance, review-export, sector-bundle, browser-review, portable-archive, and prepared-core contracts were validated offline; no live source was contacted.'
 printf '%s\n' 'The boundary and both building releases used above are synthetic fixtures, not county source data.'
 printf '%s\n' 'TrivialHTTP source was checked for presence but was not compiled.'
-printf '%s\n' 'The prepared-core exporter was validated with synthetic accepted data; roads, water, and the final deployment ZIP remain pending.'
+printf '%s\n' 'The road and water source profiles were validated offline; live harvesting, SQL acceptance, prepared-bundle completion, and the final deployment ZIP remain pending.'

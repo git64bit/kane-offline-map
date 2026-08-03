@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import county_arcgis
-import county_buildings
+import county_geojson
 
 
 def parse_timestamp(value: Any, label: str) -> str:
@@ -99,7 +99,11 @@ def validate_features(
             raise RuntimeError(
                 f"Harvest output feature {current_object} does not use {profile['id_property']} as feature.id."
             )
-        county_buildings.normalize_geometry(feature.get("geometry"))
+        county_geojson.validate_geometry(
+            feature.get("geometry"),
+            profile["expected_geometry_type"],
+            f"feature {current_stable}",
+        )
         seen_objects.add(current_object)
         seen_stable.add(current_stable)
         object_ids.append(current_object)

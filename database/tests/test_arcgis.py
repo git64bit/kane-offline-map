@@ -3,12 +3,15 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
 
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
+if str(TOOLS) not in sys.path:
+    sys.path.insert(0, str(TOOLS))
 MODULE_PATH = TOOLS / "county_arcgis.py"
 OFFICIAL_PROFILE = Path(__file__).resolve().parents[1] / "sources" / "kane-county-buildings.json"
 SPEC = importlib.util.spec_from_file_location("county_arcgis_test", MODULE_PATH)

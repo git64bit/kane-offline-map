@@ -9,22 +9,31 @@ Tracked source profiles:
 ```text
 database/sources/kane-county-buildings.json
 database/sources/kane-county-boundary.json
+database/sources/kane-county-roads.json
+database/sources/kane-county-fox-river.json
+database/sources/kane-county-creeks.json
 ```
 
-Configured official layers:
-
-```text
-https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/KaneCo_IL_BuildingFootprints/FeatureServer/0
-https://services1.arcgis.com/oRKmdBXD6EbdmVgJ/ArcGIS/rest/services/County_Boundary/FeatureServer/0
-```
+The tracked services provide building polygons, one county-boundary polygon, road-centerline polylines, Fox River polygons, and creek polylines. All harvests request EPSG:4326 GeoJSON.
 
 ## Identity policy
 
-Building snapshots use the system-maintained `OBJECTID` only for complete ordered retrieval. The county `FPId` field is required as the stable release-to-release building identity.
+Building snapshots use the system-maintained `OBJECTID` for complete ordered retrieval and the county `FPId` field as the stable release-to-release identity.
 
-The county-boundary profile requires exactly one polygon feature. Its `OBJECTID` is sufficient as the snapshot identity because the source contract represents one county-wide geometry, not a collection of independently tracked features.
+The county boundary, roads, Fox River, and creek profiles use the service-maintained `OBJECTID` as snapshot identity. These datasets are accepted as immutable source releases; later release comparison is based on their exact harvested content and provenance.
 
-A candidate is rejected for missing or duplicate identities, unsupported geometry, an object-ID mismatch, a schema mismatch, or a feature count that violates the tracked profile.
+A candidate is rejected for missing or duplicate identities, unsupported or malformed geometry, an object-ID mismatch, a schema mismatch, or a feature count that violates the tracked profile.
+
+## Geometry policy
+
+The harvester accepts only geometry matching the profile:
+
+```text
+esriGeometryPolygon  -> Polygon or MultiPolygon
+esriGeometryPolyline -> LineString or MultiLineString
+```
+
+Polygon rings must be closed and contain at least four coordinate pairs. Line paths must contain at least two finite coordinate pairs.
 
 ## Retrieval method
 
@@ -40,32 +49,32 @@ Explicit object-ID groups avoid dependence on offset pagination. Every returned 
 
 ## Commands
 
-Validate both tracked profiles without network access:
+Validate all tracked profiles without network access:
 
 ```sh
 bash database/validate-source-profile.sh
 ```
 
-Harvest buildings:
+Harvest and validate each source:
 
 ```sh
 bash database/harvest-kane-buildings.sh /absolute/path/kane-buildings.geojson
-```
+bash database/validate-kane-building-harvest.sh /absolute/path/kane-buildings.geojson
 
-Harvest the county boundary:
-
-```sh
 bash database/harvest-kane-boundary.sh /absolute/path/kane-boundary.geojson
+bash database/validate-kane-boundary-harvest.sh /absolute/path/kane-boundary.geojson
+
+bash database/harvest-kane-roads.sh /absolute/path/kane-roads.geojson
+bash database/validate-kane-road-harvest.sh /absolute/path/kane-roads.geojson
+
+bash database/harvest-kane-fox-river.sh /absolute/path/kane-fox-river.geojson
+bash database/validate-kane-fox-river-harvest.sh /absolute/path/kane-fox-river.geojson
+
+bash database/harvest-kane-creeks.sh /absolute/path/kane-creeks.geojson
+bash database/validate-kane-creek-harvest.sh /absolute/path/kane-creeks.geojson
 ```
 
 Add `--force` only when deliberately replacing an existing output pair.
-
-Validate completed pairs offline:
-
-```sh
-bash database/validate-kane-building-harvest.sh /absolute/path/kane-buildings.geojson
-bash database/validate-kane-boundary-harvest.sh /absolute/path/kane-boundary.geojson
-```
 
 The commands use Python's standard library. No compiler, GDAL installation, or third-party Python package is required.
 
@@ -77,4 +86,4 @@ The output and manifest are promoted only after the complete candidate succeeds.
 
 ## Deliberate limits
 
-Batch 014 accepts a validated county-boundary pair through a copied candidate database. It preserves the source release and normalized geometry, links the exact source hash to grid calibration, rebuilds the accepted building-cell index, validates the result, and promotes it atomically. Live source data and generated GeoPackages remain external to Git.
+Batch 020 establishes authoritative acquisition contracts for roads and water but does not accept them into SQL or merge the Fox River and creek releases into the browser `water.json` file. Those steps remain candidate-built and separate from live harvesting.

@@ -1,9 +1,14 @@
-Batch 019 local Linux verification
+Batch 020 local Linux verification
 
 - Tracked source checksums: PASS
 - Complete application tree: PASS
 - Official Kane County building source profile offline validation: PASS
 - Official Kane County boundary source profile offline validation: PASS
+- Official Kane County road-centerline source profile offline validation: PASS
+- Official Kane County Fox River source profile offline validation: PASS
+- Official Kane County creek source profile offline validation: PASS
+- Polygon and polyline ArcGIS geometry contracts: PASS
+- Degenerate and mismatched geometry rejection: PASS
 - Immutable building and boundary harvest-pair validation: PASS
 - Native GeoPackage county-boundary feature table: PASS
 - Boundary source-file provenance preservation: PASS
@@ -29,7 +34,7 @@ Batch 019 local Linux verification
 - Authoritative database byte preservation: PASS
 - Candidate failure preserves accepted outputs: PASS
 - Source script 500-line cap: PASS
-- Database, browser-contract, and packaging tests: 96 passed
+- Database, browser-contract, harvest, and packaging tests: 104 passed
 - Live ArcGIS network access: not performed and not required
 - TrivialHTTP compilation: not performed and not required
-- Authoritative county data, generated GeoPackages, generated review outputs, prepared-core outputs, and final portable ZIP: not bundled
+- Authoritative road and water data, generated GeoPackages, generated review outputs, completed prepared bundles, and final portable ZIP: not bundled

@@ -14,6 +14,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+import county_geojson
+
 PROFILE_SCHEMA = 1
 MANIFEST_SCHEMA = 1
 DEFAULT_TIMEOUT = 120.0
@@ -117,6 +119,12 @@ def profile_errors(profile: Any) -> list[str]:
             errors.append("layer_url must be an absolute HTTPS URL.")
         if "/FeatureServer/" not in parsed.path:
             errors.append("layer_url must identify an ArcGIS FeatureServer layer.")
+    expected_geometry = profile.get("expected_geometry_type")
+    if isinstance(expected_geometry, str):
+        try:
+            county_geojson.expected_geojson_types(expected_geometry)
+        except RuntimeError as exc:
+            errors.append(str(exc))
     if profile.get("out_srs") != 4326:
         errors.append("out_srs must be EPSG:4326.")
     page_size = profile.get("page_size")
@@ -166,6 +174,7 @@ def profile_info(path: Path) -> dict[str, Any]:
         "out_srs": profile["out_srs"],
         "page_size": profile["page_size"],
         "expected_feature_count": profile.get("expected_feature_count"),
+        "expected_geometry_type": profile["expected_geometry_type"],
         "profile_sha256": sha256_bytes(raw),
     }
 
@@ -238,6 +247,7 @@ def normalize_page(
     expected_ids: list[int],
     object_field: str,
     stable_field: str,
+    expected_geometry_type: str,
     seen_stable: set[str],
 ) -> list[dict[str, Any]]:
     if document.get("type") != "FeatureCollection" or not isinstance(document.get("features"), list):
@@ -255,9 +265,9 @@ def normalize_page(
         stable_id = stable_text(properties.get(stable_field), stable_field)
         if stable_id in seen_stable:
             raise RuntimeError(f"ArcGIS harvest contains duplicate stable ID {stable_id}.")
-        geometry = feature.get("geometry")
-        if not isinstance(geometry, dict) or geometry.get("type") not in ("Polygon", "MultiPolygon"):
-            raise RuntimeError(f"ArcGIS feature {stable_id} has unsupported geometry.")
+        county_geojson.validate_geometry(
+            feature.get("geometry"), expected_geometry_type, f"feature {stable_id}"
+        )
         feature = dict(feature)
         feature["id"] = stable_id
         by_object[current_object_id] = feature
@@ -421,6 +431,7 @@ def harvest(
                 page_ids,
                 profile["object_id_field"],
                 profile["id_property"],
+                profile["expected_geometry_type"],
                 seen_stable,
             )
         )
